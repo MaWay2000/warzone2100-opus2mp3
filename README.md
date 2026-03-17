@@ -1,13 +1,15 @@
-# OPUS to MP3 Converter - GitHub Pages Single Thread
+# OPUS to MP3 Converter
 
-This version is designed for GitHub Pages.
+Static GitHub Pages build for converting OPUS-like audio files to MP3 in the
+browser.
 
 Why this version:
-- GitHub Pages cannot run PHP
-- GitHub Pages also cannot set the headers needed for SharedArrayBuffer
-- so this package uses ffmpeg.wasm single-thread core
+- GitHub Pages cannot run server-side conversion
+- Firefox and some other browsers can block cross-origin FFmpeg worker loading
+- this version uses Web Audio for decoding and `lamejs` for MP3 encoding
 
 Files:
-- index.html
-- .nojekyll
-- README.md
+- [index.html](./index.html)
+- [styles.css](./styles.css)
+- [app.js](./app.js)
+- [.nojekyll](./.nojekyll)
