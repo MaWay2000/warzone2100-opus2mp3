@@ -1,1 +1,60 @@
-hello ! this is Opsu 2 mp3
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>OPUS → MP3 Converter</title>
+</head>
+<body style="background:#111;color:#fff;font-family:Arial;text-align:center;padding:50px;">
+<h1>OPUS → MP3 Converter</h1>
+<p>Drag & drop your file (GitHub Pages version)</p>
+
+<input type="file" id="file">
+<br><br>
+<button onclick="convert()">Convert</button>
+
+<p id="status"></p>
+<a id="download" style="color:lime;"></a>
+
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+
+<script>
+const { FFmpeg } = FFmpegWASM;
+const { fetchFile } = FFmpegUtil;
+
+let ffmpeg = new FFmpeg();
+let loaded = false;
+
+async function loadFFmpeg(){
+    if(!loaded){
+        document.getElementById("status").innerText = "Loading FFmpeg...";
+        await ffmpeg.load();
+        loaded = true;
+    }
+}
+
+async function convert(){
+    const file = document.getElementById("file").files[0];
+    if(!file) return alert("Select file");
+
+    await loadFFmpeg();
+
+    document.getElementById("status").innerText = "Converting...";
+
+    await ffmpeg.writeFile("input.opus", await fetchFile(file));
+    await ffmpeg.exec(["-i","input.opus","output.mp3"]);
+
+    const data = await ffmpeg.readFile("output.mp3");
+    const url = URL.createObjectURL(new Blob([data.buffer], {type:"audio/mp3"}));
+
+    const a = document.getElementById("download");
+    a.href = url;
+    a.download = "output.mp3";
+    a.innerText = "Download MP3";
+
+    document.getElementById("status").innerText = "Done!";
+}
+</script>
+
+</body>
+</html>

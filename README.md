@@ -1,19 +1,8 @@
-# OPUS to MP3 Converter
+# OPUS → MP3 (GitHub Version)
 
-Simple web converter made with PHP and FFmpeg.
+Works on GitHub Pages using ffmpeg.wasm.
 
-## Features
-- Upload OPUS / OGG / WEBM
-- Convert to MP3
-- Download converted file
-
-## Requirements
-- PHP
-- FFmpeg installed on server
-
-## Run
-Upload files to a PHP-enabled server and open `index.php`.
-
-## Important
-GitHub Pages will not run this project because it does not support PHP or FFmpeg.
-Use GitHub only for source hosting, then deploy to your own server.
+## How to use
+1. Upload files to repo
+2. Enable GitHub Pages
+3. Open site

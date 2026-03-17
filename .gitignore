@@ -1,8 +1,0 @@
-uploads/*.mp3
-uploads/*.opus
-uploads/*.ogg
-uploads/*.webm
-uploads/*/*.mp3
-uploads/*/*.opus
-uploads/*/*.ogg
-uploads/*/*.webm
