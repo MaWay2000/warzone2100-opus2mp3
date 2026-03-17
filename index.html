@@ -84,7 +84,7 @@
 <body>
   <div class="card">
     <h1>OPUS → MP3 Converter</h1>
-    <p>GitHub Pages version. Runs fully in your browser with ffmpeg.wasm.</p>
+    <p>GitHub Pages version. Runs in your browser using ffmpeg.wasm single-thread core.</p>
 
     <div id="dropzone" class="dropzone">
       <strong>Drop your .opus file here</strong>
@@ -114,8 +114,8 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
-  <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
   <script>
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
@@ -174,21 +174,33 @@
 
     async function ensureLoaded() {
       if (loaded) return;
-      setStatus('warn', 'Loading FFmpeg core...', 5);
 
-      ffmpeg = new FFmpeg();
-      ffmpeg.on('progress', ({ progress }) => {
-        setStatus('warn', 'Converting...', Math.round(progress * 100));
-      });
+      try {
+        setStatus('warn', 'Loading FFmpeg core... first load can take 10-30 seconds.', 5);
 
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      await ffmpeg.load({
-        coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
-        wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm')
-      });
+        ffmpeg = new FFmpeg();
+        ffmpeg.on('progress', ({ progress }) => {
+          setStatus('warn', 'Converting...', Math.round(progress * 100));
+        });
+        ffmpeg.on('log', ({ message }) => {
+          if (message) {
+            statusText.textContent = message;
+          }
+        });
 
-      loaded = true;
-      setStatus('ok', 'FFmpeg loaded. Ready.');
+        const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+        await ffmpeg.load({
+          coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
+          wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm')
+        });
+
+        loaded = true;
+        setStatus('ok', 'FFmpeg loaded. Ready.');
+      } catch (err) {
+        console.error(err);
+        setStatus('bad', 'Load failed: ' + (err && err.message ? err.message : err));
+        throw err;
+      }
     }
 
     async function convertSelectedFile() {
