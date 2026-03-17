@@ -161,7 +161,7 @@
       },
       mp3ToOpus: {
         title: 'MP3 to OPUS Converter',
-        intro: 'GitHub Pages version. Convert MP3 audio to OPUS in your browser using ffmpeg.wasm single-thread core.',
+        intro: 'GitHub Pages version. Convert MP3 audio to Ogg Opus in your browser using native browser audio tools.',
         dropTitle: 'Drop your .mp3 file here',
         dropHelper: 'Choose an MP3 audio file to convert it into .opus.',
         convertLabel: 'Convert to OPUS',
@@ -170,9 +170,9 @@
         extensions: ['mp3'],
         outputExtension: 'opus',
         outputMime: 'audio/ogg; codecs=opus',
-        progressLabel: 'Converting to OPUS...',
+        progressLabel: 'Encoding Ogg Opus...',
         fileError: 'This mode accepts .mp3 audio files.',
-        buildArgs: (inputName, outputName) => ['-i', inputName, '-c:a', 'libopus', '-b:a', '128k', outputName]
+        engine: 'mediaRecorder'
       }
     };
 
@@ -305,6 +305,131 @@
       return fileName.replace(/\.[^.]+$/, '') + '.' + outputExtension;
     }
 
+    function getAudioContextConstructor() {
+      return window.AudioContext || window.webkitAudioContext || null;
+    }
+
+    function ensureOpusRecorderSupport() {
+      if (typeof MediaRecorder === 'undefined') {
+        throw new Error('This browser does not support browser-native OPUS recording.');
+      }
+
+      if (typeof MediaRecorder.isTypeSupported === 'function' &&
+          !MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+        throw new Error('This browser cannot create .opus files. Try Firefox for MP3 to OPUS conversion.');
+      }
+    }
+
+    async function decodeAudioFile(file) {
+      const AudioContextCtor = getAudioContextConstructor();
+      if (!AudioContextCtor) {
+        throw new Error('This browser does not support Web Audio decoding.');
+      }
+
+      const audioContext = new AudioContextCtor();
+      try {
+        setStatus('warn', 'Decoding MP3...', 15);
+        const arrayBuffer = await file.arrayBuffer();
+        return await audioContext.decodeAudioData(arrayBuffer.slice(0));
+      } finally {
+        try {
+          await audioContext.close();
+        } catch (e) {}
+      }
+    }
+
+    async function encodeAudioBufferToOpus(audioBuffer) {
+      ensureOpusRecorderSupport();
+
+      const AudioContextCtor = getAudioContextConstructor();
+      if (!AudioContextCtor) {
+        throw new Error('This browser does not support Web Audio playback for OPUS encoding.');
+      }
+
+      const audioContext = new AudioContextCtor();
+      const destination = audioContext.createMediaStreamDestination();
+      const source = audioContext.createBufferSource();
+      const chunks = [];
+      let progressTimer = null;
+
+      source.buffer = audioBuffer;
+      source.connect(destination);
+
+      return await new Promise(async (resolve, reject) => {
+        let recorder;
+
+        function cleanup() {
+          if (progressTimer) {
+            window.clearInterval(progressTimer);
+            progressTimer = null;
+          }
+
+          try { source.disconnect(); } catch (e) {}
+          try { destination.disconnect(); } catch (e) {}
+          try {
+            if (audioContext.state !== 'closed') {
+              audioContext.close();
+            }
+          } catch (e) {}
+        }
+
+        try {
+          recorder = new MediaRecorder(destination.stream, {
+            mimeType: 'audio/ogg;codecs=opus',
+            audioBitsPerSecond: 128000
+          });
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
+
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            chunks.push(event.data);
+          }
+        };
+
+        recorder.onerror = (event) => {
+          cleanup();
+          reject(event.error || new Error('MediaRecorder failed during OPUS encoding.'));
+        };
+
+        recorder.onstop = () => {
+          cleanup();
+          const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
+          if (!blob.size) {
+            reject(new Error('Browser produced an empty .opus file.'));
+            return;
+          }
+          resolve(blob);
+        };
+
+        source.onended = () => {
+          if (recorder && recorder.state !== 'inactive') {
+            recorder.stop();
+          }
+        };
+
+        try {
+          await audioContext.resume();
+          const startedAt = performance.now();
+          progressTimer = window.setInterval(() => {
+            const elapsedSeconds = (performance.now() - startedAt) / 1000;
+            const totalSeconds = Math.max(audioBuffer.duration, 0.1);
+            const progress = 20 + Math.round(Math.min(75, (elapsedSeconds / totalSeconds) * 75));
+            setStatus('warn', currentMode().progressLabel, progress);
+          }, 200);
+
+          recorder.start(250);
+          source.start(0);
+        } catch (error) {
+          cleanup();
+          reject(error);
+        }
+      });
+    }
+
     function setMode(nextModeKey) {
       if (!MODES[nextModeKey] || nextModeKey === currentModeKey) {
         return;
@@ -352,20 +477,30 @@
       resultBox.hidden = true;
 
       try {
-        await ensureLoaded();
+        let blob;
 
-        const ext = fileExtension(selectedFile.name) || currentMode().extensions[0];
-        const inputName = 'input.' + ext;
-        const outputName = 'output.' + currentMode().outputExtension;
+        if (currentMode().engine === 'mediaRecorder') {
+          const audioBuffer = await decodeAudioFile(selectedFile);
+          blob = await encodeAudioBufferToOpus(audioBuffer);
+        } else {
+          await ensureLoaded();
 
-        setStatus('warn', 'Preparing file...', 10);
-        await ffmpeg.writeFile(inputName, await fetchFile(selectedFile));
+          const ext = fileExtension(selectedFile.name) || currentMode().extensions[0];
+          const inputName = 'input.' + ext;
+          const outputName = 'output.' + currentMode().outputExtension;
 
-        setStatus('warn', currentMode().progressLabel, 15);
-        await ffmpeg.exec(currentMode().buildArgs(inputName, outputName));
+          setStatus('warn', 'Preparing file...', 10);
+          await ffmpeg.writeFile(inputName, await fetchFile(selectedFile));
 
-        const data = await ffmpeg.readFile(outputName);
-        const blob = new Blob([data.buffer], { type: currentMode().outputMime });
+          setStatus('warn', currentMode().progressLabel, 15);
+          await ffmpeg.exec(currentMode().buildArgs(inputName, outputName));
+
+          const data = await ffmpeg.readFile(outputName);
+          blob = new Blob([data.buffer], { type: currentMode().outputMime });
+
+          try { await ffmpeg.deleteFile(inputName); } catch (e) {}
+          try { await ffmpeg.deleteFile(outputName); } catch (e) {}
+        }
 
         if (activeUrl) URL.revokeObjectURL(activeUrl);
         activeUrl = URL.createObjectURL(blob);
@@ -378,9 +513,6 @@
         resultBox.hidden = false;
 
         setStatus('ok', 'Conversion finished.', 100);
-
-        try { await ffmpeg.deleteFile(inputName); } catch (e) {}
-        try { await ffmpeg.deleteFile(outputName); } catch (e) {}
       } catch (err) {
         console.error(err);
         setStatus('bad', 'Error: ' + (err && err.message ? err.message : err));
