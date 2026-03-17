@@ -88,6 +88,19 @@
       padding: 14px 16px;
       background: #0d1019;
     }
+    .file-box-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .file-box-copy {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .file-action {
+      flex: 0 0 auto;
+    }
     .mono { font-family: Consolas, monospace; word-break: break-word; }
     .ok { border-color: #2f8f5b; }
     .warn { border-color: #8d6c2e; }
@@ -95,6 +108,18 @@
     progress { width: 100%; height: 16px; margin-top: 10px; }
     audio { width: 100%; margin-top: 12px; }
     .small { font-size: 14px; color: #b9bfd6; }
+    @media (max-width: 640px) {
+      .file-box-content {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .file-action {
+        width: 100%;
+      }
+      .file-action.btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -117,12 +142,19 @@
       <div id="dropHelper" class="small" style="margin-top:6px;">You can also use compatible .ogg and .webm audio files.</div>
       <div class="row">
         <label class="btn" for="fileInput">Choose File</label>
-        <button id="convertBtn" class="btn secondary" disabled>Convert to MP3</button>
       </div>
       <input id="fileInput" type="file" accept=".opus,audio/opus,.ogg,.webm,audio/ogg,audio/webm" />
     </div>
 
-    <div id="fileBox" class="panel" hidden></div>
+    <div id="fileBox" class="panel" hidden>
+      <div class="file-box-content">
+        <div class="file-box-copy">
+          <strong>Selected file</strong>
+          <div id="fileMeta" class="small mono" style="margin-top:8px;"></div>
+        </div>
+        <button id="convertBtn" class="btn secondary file-action" disabled>Convert to MP3</button>
+      </div>
+    </div>
 
     <div id="status" class="panel warn">
       <strong>Status</strong>
@@ -186,6 +218,7 @@
     const fileInput = document.getElementById('fileInput');
     const convertBtn = document.getElementById('convertBtn');
     const fileBox = document.getElementById('fileBox');
+    const fileMeta = document.getElementById('fileMeta');
     const statusBox = document.getElementById('status');
     const statusText = document.getElementById('statusText');
     const progressBar = document.getElementById('progress');
@@ -291,8 +324,7 @@
 
       selectedFile = file;
       fileBox.hidden = false;
-      fileBox.innerHTML = '<strong>Selected file</strong><div class="small mono" style="margin-top:8px;">' +
-        file.name + ' (' + prettyBytes(file.size) + ')</div>';
+      fileMeta.textContent = file.name + ' (' + prettyBytes(file.size) + ')';
       convertBtn.disabled = false;
       setStatus('warn', 'File ready. Click convert.');
     }
