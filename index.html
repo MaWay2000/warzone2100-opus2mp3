@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OPUS to MP3 Converter</title>
-  <meta name="description" content="Convert OPUS to MP3 directly in your browser." />
+  <meta name="description" content="Convert OPUS and MP3 audio directly in your browser." />
   <link rel="icon" href="data:,">
   <style>
     * { box-sizing: border-box; }
@@ -29,6 +29,21 @@
     }
     h1 { margin: 0 0 12px; font-size: 42px; }
     p { color: #c8cbe0; }
+    .mode-switch {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .mode-btn {
+      flex: 1 1 220px;
+      min-width: 0;
+    }
+    .mode-btn.active {
+      background: #8ea0ff;
+      color: #0f1328;
+      border-color: transparent;
+    }
     .dropzone {
       margin-top: 18px;
       border: 2px dashed #5968ff66;
@@ -84,12 +99,22 @@
 </head>
 <body>
   <div class="card">
-    <h1>OPUS → MP3 Converter</h1>
-    <p>GitHub Pages version. Runs in your browser using ffmpeg.wasm single-thread core.</p>
+    <h1 id="pageTitle">OPUS to MP3 Converter</h1>
+    <p id="introText">GitHub Pages version. Runs in your browser using ffmpeg.wasm single-thread core.</p>
+
+    <div class="mode-switch" role="group" aria-label="Conversion direction">
+      <button id="modeOpusToMp3" class="btn secondary mode-btn active" type="button" aria-pressed="true">
+        OPUS to MP3
+      </button>
+      <button id="modeMp3ToOpus" class="btn secondary mode-btn" type="button" aria-pressed="false">
+        MP3 to OPUS
+      </button>
+    </div>
 
     <div id="dropzone" class="dropzone">
-      <strong>Drop your .opus file here</strong>
+      <strong id="dropTitle">Drop your .opus file here</strong>
       <div class="small" style="margin-top:8px;">or choose a file below</div>
+      <div id="dropHelper" class="small" style="margin-top:6px;">You can also use compatible .ogg and .webm audio files.</div>
       <div class="row">
         <label class="btn" for="fileInput">Choose File</label>
         <button id="convertBtn" class="btn secondary" disabled>Convert to MP3</button>
@@ -118,6 +143,45 @@
   <script src="./ffmpeg.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
   <script>
+    const MODES = {
+      opusToMp3: {
+        title: 'OPUS to MP3 Converter',
+        intro: 'GitHub Pages version. Convert OPUS-like audio to MP3 in your browser using ffmpeg.wasm single-thread core.',
+        dropTitle: 'Drop your .opus file here',
+        dropHelper: 'You can also use compatible .ogg and .webm audio files.',
+        convertLabel: 'Convert to MP3',
+        downloadLabel: 'Download MP3',
+        accept: '.opus,audio/opus,.ogg,.webm,audio/ogg,audio/webm',
+        extensions: ['opus', 'ogg', 'webm'],
+        outputExtension: 'mp3',
+        outputMime: 'audio/mpeg',
+        progressLabel: 'Converting to MP3...',
+        fileError: 'This mode accepts .opus, .ogg, or .webm audio files.',
+        buildArgs: (inputName, outputName) => ['-i', inputName, '-b:a', '192k', outputName]
+      },
+      mp3ToOpus: {
+        title: 'MP3 to OPUS Converter',
+        intro: 'GitHub Pages version. Convert MP3 audio to OPUS in your browser using ffmpeg.wasm single-thread core.',
+        dropTitle: 'Drop your .mp3 file here',
+        dropHelper: 'Choose an MP3 audio file to convert it into .opus.',
+        convertLabel: 'Convert to OPUS',
+        downloadLabel: 'Download OPUS',
+        accept: '.mp3,audio/mpeg',
+        extensions: ['mp3'],
+        outputExtension: 'opus',
+        outputMime: 'audio/ogg; codecs=opus',
+        progressLabel: 'Converting to OPUS...',
+        fileError: 'This mode accepts .mp3 audio files.',
+        buildArgs: (inputName, outputName) => ['-i', inputName, '-c:a', 'libopus', '-b:a', '128k', outputName]
+      }
+    };
+
+    const pageTitle = document.getElementById('pageTitle');
+    const introText = document.getElementById('introText');
+    const dropTitle = document.getElementById('dropTitle');
+    const dropHelper = document.getElementById('dropHelper');
+    const modeOpusToMp3 = document.getElementById('modeOpusToMp3');
+    const modeMp3ToOpus = document.getElementById('modeMp3ToOpus');
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
     const convertBtn = document.getElementById('convertBtn');
@@ -137,6 +201,7 @@
     let loaded = false;
     let selectedFile = null;
     let activeUrl = null;
+    let currentModeKey = 'opusToMp3';
 
     function prettyBytes(bytes) {
       const units = ['B', 'KB', 'MB', 'GB'];
@@ -144,6 +209,10 @@
       let n = bytes || 0;
       while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
       return (n >= 10 || i === 0 ? n.toFixed(0) : n.toFixed(1)) + ' ' + units[i];
+    }
+
+    function currentMode() {
+      return MODES[currentModeKey];
     }
 
     function setStatus(type, text, progress) {
@@ -157,20 +226,93 @@
       }
     }
 
-    function setFile(file) {
-      selectedFile = file;
+    function resetResult() {
       resultBox.hidden = true;
+      audioPreview.removeAttribute('src');
+      audioPreview.load();
+      if (activeUrl) {
+        URL.revokeObjectURL(activeUrl);
+        activeUrl = null;
+      }
+    }
+
+    function updateModeButtons() {
+      const isOpusToMp3 = currentModeKey === 'opusToMp3';
+      modeOpusToMp3.classList.toggle('active', isOpusToMp3);
+      modeMp3ToOpus.classList.toggle('active', !isOpusToMp3);
+      modeOpusToMp3.setAttribute('aria-pressed', String(isOpusToMp3));
+      modeMp3ToOpus.setAttribute('aria-pressed', String(!isOpusToMp3));
+    }
+
+    function updateModeUi() {
+      const mode = currentMode();
+      document.title = mode.title;
+      pageTitle.textContent = mode.title;
+      introText.textContent = mode.intro;
+      dropTitle.textContent = mode.dropTitle;
+      dropHelper.textContent = mode.dropHelper;
+      convertBtn.textContent = mode.convertLabel;
+      downloadBtn.textContent = mode.downloadLabel;
+      downloadBtn.download = 'converted.' + mode.outputExtension;
+      fileInput.accept = mode.accept;
+      updateModeButtons();
+    }
+
+    function clearSelection(waitingText, statusType) {
+      selectedFile = null;
+      fileInput.value = '';
+      fileBox.hidden = true;
+      resetResult();
+      convertBtn.disabled = true;
+      setStatus(statusType || 'warn', waitingText || 'Waiting for file.');
+    }
+
+    function fileExtension(fileName) {
+      const parts = (fileName || '').toLowerCase().split('.');
+      return parts.length > 1 ? parts.pop() : '';
+    }
+
+    function fileMatchesMode(file) {
+      return currentMode().extensions.includes(fileExtension(file.name));
+    }
+
+    function setFile(file) {
+      resetResult();
+
       if (!file) {
-        fileBox.hidden = true;
-        convertBtn.disabled = true;
-        setStatus('warn', 'Waiting for file.');
+        clearSelection();
         return;
       }
+
+      if (!fileMatchesMode(file)) {
+        clearSelection(currentMode().fileError, 'bad');
+        return;
+      }
+
+      selectedFile = file;
       fileBox.hidden = false;
       fileBox.innerHTML = '<strong>Selected file</strong><div class="small mono" style="margin-top:8px;">' +
         file.name + ' (' + prettyBytes(file.size) + ')</div>';
       convertBtn.disabled = false;
       setStatus('warn', 'File ready. Click convert.');
+    }
+
+    function buildOutputName(fileName) {
+      const outputExtension = currentMode().outputExtension;
+      if (!/\.[^.]+$/.test(fileName || '')) {
+        return 'converted.' + outputExtension;
+      }
+      return fileName.replace(/\.[^.]+$/, '') + '.' + outputExtension;
+    }
+
+    function setMode(nextModeKey) {
+      if (!MODES[nextModeKey] || nextModeKey === currentModeKey) {
+        return;
+      }
+
+      currentModeKey = nextModeKey;
+      updateModeUi();
+      clearSelection('Waiting for file.');
     }
 
     async function ensureLoaded() {
@@ -181,11 +323,11 @@
 
         ffmpeg = new FFmpeg();
         ffmpeg.on('progress', ({ progress }) => {
-          setStatus('warn', 'Converting...', Math.round(progress * 100));
+          setStatus('warn', currentMode().progressLabel, Math.round(progress * 100));
         });
         ffmpeg.on('log', ({ message }) => {
-          if (message) {
-            statusText.textContent = message;
+          if (message && /error|failed/i.test(message)) {
+            console.error(message);
           }
         });
 
@@ -212,23 +354,23 @@
       try {
         await ensureLoaded();
 
-        const ext = (selectedFile.name.split('.').pop() || 'opus').toLowerCase();
+        const ext = fileExtension(selectedFile.name) || currentMode().extensions[0];
         const inputName = 'input.' + ext;
-        const outputName = 'output.mp3';
+        const outputName = 'output.' + currentMode().outputExtension;
 
         setStatus('warn', 'Preparing file...', 10);
         await ffmpeg.writeFile(inputName, await fetchFile(selectedFile));
 
-        setStatus('warn', 'Converting...', 15);
-        await ffmpeg.exec(['-i', inputName, '-b:a', '192k', outputName]);
+        setStatus('warn', currentMode().progressLabel, 15);
+        await ffmpeg.exec(currentMode().buildArgs(inputName, outputName));
 
         const data = await ffmpeg.readFile(outputName);
-        const blob = new Blob([data.buffer], { type: 'audio/mpeg' });
+        const blob = new Blob([data.buffer], { type: currentMode().outputMime });
 
         if (activeUrl) URL.revokeObjectURL(activeUrl);
         activeUrl = URL.createObjectURL(blob);
 
-        const outName = selectedFile.name.replace(/\.[^.]+$/, '') + '.mp3';
+        const outName = buildOutputName(selectedFile.name);
         downloadBtn.href = activeUrl;
         downloadBtn.download = outName;
         audioPreview.src = activeUrl;
@@ -243,10 +385,12 @@
         console.error(err);
         setStatus('bad', 'Error: ' + (err && err.message ? err.message : err));
       } finally {
-        convertBtn.disabled = false;
+        convertBtn.disabled = !selectedFile;
       }
     }
 
+    modeOpusToMp3.addEventListener('click', () => setMode('opusToMp3'));
+    modeMp3ToOpus.addEventListener('click', () => setMode('mp3ToOpus'));
     fileInput.addEventListener('change', (e) => setFile(e.target.files[0] || null));
     convertBtn.addEventListener('click', convertSelectedFile);
 
@@ -263,6 +407,9 @@
       });
     });
     dropzone.addEventListener('drop', (e) => setFile(e.dataTransfer.files[0] || null));
+
+    updateModeUi();
+    clearSelection('Waiting for file.');
   </script>
 </body>
 </html>
