@@ -1,8 +1,9 @@
-# OPUS → MP3 (GitHub Version)
+# OPUS to MP3 Converter - GitHub Pages Fixed
 
-Works on GitHub Pages using ffmpeg.wasm.
+This version is meant for GitHub Pages.
+It runs fully in the browser using ffmpeg.wasm.
 
-## How to use
-1. Upload files to repo
-2. Enable GitHub Pages
-3. Open site
+Files:
+- index.html
+- .nojekyll
+- README.md

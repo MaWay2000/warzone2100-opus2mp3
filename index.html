@@ -1,60 +1,255 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>OPUS → MP3 Converter</title>
-</head>
-<body style="background:#111;color:#fff;font-family:Arial;text-align:center;padding:50px;">
-<h1>OPUS → MP3 Converter</h1>
-<p>Drag & drop your file (GitHub Pages version)</p>
-
-<input type="file" id="file">
-<br><br>
-<button onclick="convert()">Convert</button>
-
-<p id="status"></p>
-<a id="download" style="color:lime;"></a>
-
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
-<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
-
-<script>
-const { FFmpeg } = FFmpegWASM;
-const { fetchFile } = FFmpegUtil;
-
-let ffmpeg = new FFmpeg();
-let loaded = false;
-
-async function loadFFmpeg(){
-    if(!loaded){
-        document.getElementById("status").innerText = "Loading FFmpeg...";
-        await ffmpeg.load();
-        loaded = true;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OPUS to MP3 Converter</title>
+  <meta name="description" content="Convert OPUS to MP3 directly in your browser." />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #0b0b0f;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
     }
-}
+    .card {
+      width: min(760px, 100%);
+      background: #12131a;
+      border: 1px solid #2a2d3a;
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+    h1 { margin: 0 0 12px; font-size: 42px; }
+    p { color: #c8cbe0; }
+    .dropzone {
+      margin-top: 18px;
+      border: 2px dashed #5968ff66;
+      border-radius: 16px;
+      padding: 22px;
+      text-align: center;
+      background: #0d1020;
+    }
+    .dropzone.drag { border-color: #7c8cff; background: #141935; }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 14px;
+    }
+    .btn, label.btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 170px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: none;
+      background: #8ea0ff;
+      color: #0f1328;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn.secondary {
+      background: #1b1f30;
+      color: #fff;
+      border: 1px solid #31364b;
+    }
+    .btn[disabled] { opacity: .55; cursor: not-allowed; }
+    input[type=file] { display: none; }
+    .panel {
+      margin-top: 16px;
+      border: 1px solid #2c3040;
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: #0d1019;
+    }
+    .mono { font-family: Consolas, monospace; word-break: break-word; }
+    .ok { border-color: #2f8f5b; }
+    .warn { border-color: #8d6c2e; }
+    .bad { border-color: #a1425e; }
+    progress { width: 100%; height: 16px; margin-top: 10px; }
+    audio { width: 100%; margin-top: 12px; }
+    .small { font-size: 14px; color: #b9bfd6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>OPUS → MP3 Converter</h1>
+    <p>GitHub Pages version. Runs fully in your browser with ffmpeg.wasm.</p>
 
-async function convert(){
-    const file = document.getElementById("file").files[0];
-    if(!file) return alert("Select file");
+    <div id="dropzone" class="dropzone">
+      <strong>Drop your .opus file here</strong>
+      <div class="small" style="margin-top:8px;">or choose a file below</div>
+      <div class="row">
+        <label class="btn" for="fileInput">Choose File</label>
+        <button id="convertBtn" class="btn secondary" disabled>Convert to MP3</button>
+      </div>
+      <input id="fileInput" type="file" accept=".opus,audio/opus,.ogg,.webm,audio/ogg,audio/webm" />
+    </div>
 
-    await loadFFmpeg();
+    <div id="fileBox" class="panel" hidden></div>
 
-    document.getElementById("status").innerText = "Converting...";
+    <div id="status" class="panel warn">
+      <strong>Status</strong>
+      <div id="statusText" class="small" style="margin-top:8px;">Waiting for file.</div>
+      <progress id="progress" value="0" max="100" hidden></progress>
+    </div>
 
-    await ffmpeg.writeFile("input.opus", await fetchFile(file));
-    await ffmpeg.exec(["-i","input.opus","output.mp3"]);
+    <div id="result" class="panel ok" hidden>
+      <strong>Finished</strong>
+      <div id="resultText" class="small" style="margin-top:8px;"></div>
+      <div class="row">
+        <a id="downloadBtn" class="btn" href="#" download="converted.mp3">Download MP3</a>
+      </div>
+      <audio id="audioPreview" controls></audio>
+    </div>
+  </div>
 
-    const data = await ffmpeg.readFile("output.mp3");
-    const url = URL.createObjectURL(new Blob([data.buffer], {type:"audio/mp3"}));
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+  <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const convertBtn = document.getElementById('convertBtn');
+    const fileBox = document.getElementById('fileBox');
+    const statusBox = document.getElementById('status');
+    const statusText = document.getElementById('statusText');
+    const progressBar = document.getElementById('progress');
+    const resultBox = document.getElementById('result');
+    const resultText = document.getElementById('resultText');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const audioPreview = document.getElementById('audioPreview');
 
-    const a = document.getElementById("download");
-    a.href = url;
-    a.download = "output.mp3";
-    a.innerText = "Download MP3";
+    const { FFmpeg } = FFmpegWASM;
+    const { fetchFile, toBlobURL } = FFmpegUtil;
 
-    document.getElementById("status").innerText = "Done!";
-}
-</script>
+    let ffmpeg = null;
+    let loaded = false;
+    let selectedFile = null;
+    let activeUrl = null;
 
+    function prettyBytes(bytes) {
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let i = 0;
+      let n = bytes || 0;
+      while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+      return (n >= 10 || i === 0 ? n.toFixed(0) : n.toFixed(1)) + ' ' + units[i];
+    }
+
+    function setStatus(type, text, progress) {
+      statusBox.className = 'panel ' + type;
+      statusText.textContent = text;
+      if (typeof progress === 'number') {
+        progressBar.hidden = false;
+        progressBar.value = Math.max(0, Math.min(100, progress));
+      } else {
+        progressBar.hidden = true;
+      }
+    }
+
+    function setFile(file) {
+      selectedFile = file;
+      resultBox.hidden = true;
+      if (!file) {
+        fileBox.hidden = true;
+        convertBtn.disabled = true;
+        setStatus('warn', 'Waiting for file.');
+        return;
+      }
+      fileBox.hidden = false;
+      fileBox.innerHTML = '<strong>Selected file</strong><div class="small mono" style="margin-top:8px;">' +
+        file.name + ' (' + prettyBytes(file.size) + ')</div>';
+      convertBtn.disabled = false;
+      setStatus('warn', 'File ready. Click convert.');
+    }
+
+    async function ensureLoaded() {
+      if (loaded) return;
+      setStatus('warn', 'Loading FFmpeg core...', 5);
+
+      ffmpeg = new FFmpeg();
+      ffmpeg.on('progress', ({ progress }) => {
+        setStatus('warn', 'Converting...', Math.round(progress * 100));
+      });
+
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
+        wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm')
+      });
+
+      loaded = true;
+      setStatus('ok', 'FFmpeg loaded. Ready.');
+    }
+
+    async function convertSelectedFile() {
+      if (!selectedFile) return;
+      convertBtn.disabled = true;
+      resultBox.hidden = true;
+
+      try {
+        await ensureLoaded();
+
+        const ext = (selectedFile.name.split('.').pop() || 'opus').toLowerCase();
+        const inputName = 'input.' + ext;
+        const outputName = 'output.mp3';
+
+        setStatus('warn', 'Preparing file...', 10);
+        await ffmpeg.writeFile(inputName, await fetchFile(selectedFile));
+
+        setStatus('warn', 'Converting...', 15);
+        await ffmpeg.exec(['-i', inputName, '-b:a', '192k', outputName]);
+
+        const data = await ffmpeg.readFile(outputName);
+        const blob = new Blob([data.buffer], { type: 'audio/mpeg' });
+
+        if (activeUrl) URL.revokeObjectURL(activeUrl);
+        activeUrl = URL.createObjectURL(blob);
+
+        const outName = selectedFile.name.replace(/\.[^.]+$/, '') + '.mp3';
+        downloadBtn.href = activeUrl;
+        downloadBtn.download = outName;
+        audioPreview.src = activeUrl;
+        resultText.textContent = outName + ' is ready. Size: ' + prettyBytes(blob.size);
+        resultBox.hidden = false;
+
+        setStatus('ok', 'Conversion finished.', 100);
+
+        try { await ffmpeg.deleteFile(inputName); } catch (e) {}
+        try { await ffmpeg.deleteFile(outputName); } catch (e) {}
+      } catch (err) {
+        console.error(err);
+        setStatus('bad', 'Error: ' + (err && err.message ? err.message : err));
+      } finally {
+        convertBtn.disabled = false;
+      }
+    }
+
+    fileInput.addEventListener('change', (e) => setFile(e.target.files[0] || null));
+    convertBtn.addEventListener('click', convertSelectedFile);
+
+    ['dragenter','dragover'].forEach(type => {
+      dropzone.addEventListener(type, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('drag');
+      });
+    });
+    ['dragleave','drop'].forEach(type => {
+      dropzone.addEventListener(type, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('drag');
+      });
+    });
+    dropzone.addEventListener('drop', (e) => setFile(e.dataTransfer.files[0] || null));
+  </script>
 </body>
 </html>
