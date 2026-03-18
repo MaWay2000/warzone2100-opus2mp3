@@ -182,6 +182,14 @@
       align-items: center;
       gap: 12px;
     }
+    .status-queue-strip {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #2c3040;
+    }
+    .status-panel .file-box-content {
+      gap: 14px;
+    }
     .status-panel strong {
       font-size: 14px;
       line-height: 1.1;
@@ -366,6 +374,21 @@
         <div id="statusText" class="small status-text">Waiting for file.</div>
         <progress id="progress" value="0" max="100" hidden></progress>
       </div>
+      <div id="fileBox" class="status-queue-strip" hidden>
+        <div class="file-box-content">
+          <div class="file-box-copy">
+            <strong id="fileBoxTitle">Next in queue</strong>
+            <div id="fileMeta" class="small mono" style="margin-top:8px;"></div>
+          </div>
+          <div id="previewWrap" class="file-box-preview" hidden>
+            <audio id="audioPreview" controls></audio>
+          </div>
+          <div class="file-actions">
+            <button id="convertBtn" class="btn secondary file-action" disabled>Convert Next</button>
+            <button id="convertAllBtn" class="btn secondary file-action" disabled hidden>Convert All</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -397,22 +420,6 @@
           <label class="btn" for="fileInput">Choose Files</label>
         </div>
         <input id="fileInput" type="file" accept=".opus,audio/opus,.ogg,.webm,audio/ogg,audio/webm" multiple />
-      </div>
-
-      <div id="fileBox" class="panel" hidden>
-        <div class="file-box-content">
-          <div class="file-box-copy">
-            <strong id="fileBoxTitle">Next in queue</strong>
-            <div id="fileMeta" class="small mono" style="margin-top:8px;"></div>
-          </div>
-          <div id="previewWrap" class="file-box-preview" hidden>
-            <audio id="audioPreview" controls></audio>
-          </div>
-          <div class="file-actions">
-            <button id="convertBtn" class="btn secondary file-action" disabled>Convert Next</button>
-            <button id="convertAllBtn" class="btn secondary file-action" disabled hidden>Convert All</button>
-          </div>
-        </div>
       </div>
 
       <div id="queuePanel" class="panel" hidden>
@@ -844,6 +851,7 @@
       if (!nextItem) {
         fileBox.hidden = true;
         setPreviewFile(null);
+        window.requestAnimationFrame(updateStatusSpacer);
         return;
       }
 
@@ -861,6 +869,7 @@
       convertAllBtn.disabled = isConverting || pendingCount < 2;
       setConvertButtonReady(!isConverting && pendingCount > 0);
       setPreviewFile(nextItem.file);
+      window.requestAnimationFrame(updateStatusSpacer);
     }
 
     function enqueueFiles(fileList) {
