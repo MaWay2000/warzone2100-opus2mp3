@@ -259,7 +259,6 @@
   </div>
 
   <script src="./ffmpeg.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
   <script>
     const MODES = {
       opusToMp3: {
@@ -317,12 +316,12 @@
     const audioPreview = document.getElementById('audioPreview');
 
     const { FFmpeg } = FFmpegWASM;
-    const { fetchFile, toBlobURL } = FFmpegUtil;
 
     let ffmpeg = null;
     let loaded = false;
     let selectedFile = null;
     const archivedUrls = [];
+    const blobUrlCache = new Map();
     let currentModeKey = 'opusToMp3';
 
     function prettyBytes(bytes) {
@@ -335,6 +334,50 @@
 
     function currentMode() {
       return MODES[currentModeKey];
+    }
+
+    async function fetchArrayBuffer(url) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch ' + url + ' (' + response.status + ')');
+      }
+      return await response.arrayBuffer();
+    }
+
+    async function toBlobURL(url, mimeType) {
+      const cacheKey = mimeType + '|' + url;
+      if (blobUrlCache.has(cacheKey)) {
+        return blobUrlCache.get(cacheKey);
+      }
+
+      const buffer = await fetchArrayBuffer(url);
+      const objectUrl = URL.createObjectURL(
+        new Blob([buffer], { type: mimeType || 'application/octet-stream' })
+      );
+
+      blobUrlCache.set(cacheKey, objectUrl);
+      archivedUrls.push(objectUrl);
+      return objectUrl;
+    }
+
+    async function fetchFile(input) {
+      if (input instanceof Uint8Array) {
+        return input;
+      }
+
+      if (input instanceof ArrayBuffer) {
+        return new Uint8Array(input);
+      }
+
+      if (input instanceof Blob) {
+        return new Uint8Array(await input.arrayBuffer());
+      }
+
+      if (typeof input === 'string') {
+        return new Uint8Array(await fetchArrayBuffer(input));
+      }
+
+      throw new Error('Unsupported input type for FFmpeg file loading.');
     }
 
     function setStatus(type, text, progress) {

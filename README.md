@@ -16,3 +16,4 @@ Files:
 Notes:
 - `ffmpeg.js` is now a single local wrapper file with its worker code embedded
 - there is no separate `814.ffmpeg.js` chunk anymore
+- `index.html` now includes local `fetchFile` and `toBlobURL` helpers instead of loading `@ffmpeg/util`
