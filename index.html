@@ -18,11 +18,10 @@
       display: flex;
       align-items: flex-start;
       justify-content: center;
-      padding: 24px;
+      padding: 24px 24px calc(var(--status-space, 116px) + 24px);
     }
     .layout {
       width: min(1120px, 100%);
-      padding-bottom: var(--status-space, 92px);
     }
     .card {
       width: 100%;
@@ -564,7 +563,7 @@
 
     function updateStatusSpacer() {
       const bannerHeight = statusBox.offsetHeight || 0;
-      document.documentElement.style.setProperty('--status-space', (bannerHeight + 24) + 'px');
+      document.documentElement.style.setProperty('--status-space', (bannerHeight + 40) + 'px');
     }
 
     function setStatus(type, text, progress) {
