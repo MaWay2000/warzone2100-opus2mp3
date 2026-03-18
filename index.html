@@ -317,6 +317,23 @@
     .queue-status {
       flex: 0 0 auto;
     }
+    .queue-item-result {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+      margin-left: auto;
+    }
+    .queue-item-result .file-box-preview {
+      flex: 0 0 420px;
+    }
+    .queue-item-result .file-box-preview audio {
+      width: 100%;
+      max-width: 420px;
+    }
+    .queue-item-result .file-action {
+      min-width: 180px;
+    }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -337,11 +354,6 @@
       background: #16243a;
       color: #9dc3ff;
       border-color: #355c94;
-    }
-    .badge.done {
-      background: #13281c;
-      color: #8de0b1;
-      border-color: #2f8f5b;
     }
     .badge.error {
       background: #321721;
@@ -403,6 +415,17 @@
       }
       .queue-status {
         width: 100%;
+      }
+      .queue-item-result {
+        width: 100%;
+        margin-left: 0;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .queue-item-result .file-box-preview,
+      .queue-item-result .file-actions {
+        width: 100%;
+        flex: 1 1 auto;
       }
       .badge {
         width: 100%;
@@ -478,15 +501,10 @@
 
       <div id="queuePanel" class="panel" hidden>
         <div class="panel-title-row">
-          <strong>Queue</strong>
+          <strong>Selected files</strong>
           <span id="queueSummary" class="panel-summary"></span>
         </div>
         <div id="queueList" class="queue-list"></div>
-      </div>
-
-      <div id="historyPanel" class="panel" hidden>
-        <strong>Converted files</strong>
-        <div id="historyList" class="history-list"></div>
       </div>
     </div>
   </div>
@@ -566,8 +584,6 @@
     const statusBox = document.getElementById('status');
     const statusText = document.getElementById('statusText');
     const progressBar = document.getElementById('progress');
-    const historyPanel = document.getElementById('historyPanel');
-    const historyList = document.getElementById('historyList');
     const audioPreview = document.getElementById('audioPreview');
 
     const { FFmpeg } = FFmpegWASM;
@@ -669,50 +685,6 @@
       previewWrap.hidden = false;
     }
 
-    function addConvertedItem(fileName, blob) {
-      const itemUrl = URL.createObjectURL(blob);
-      archivedUrls.push(itemUrl);
-
-      const item = document.createElement('div');
-      item.className = 'history-item';
-
-      const content = document.createElement('div');
-      content.className = 'file-box-content';
-
-      const copy = document.createElement('div');
-      copy.className = 'file-box-copy';
-      const copyText = document.createElement('div');
-      copyText.className = 'small mono';
-      copyText.textContent = fileName + ' (' + prettyBytes(blob.size) + ')';
-      copy.appendChild(copyText);
-
-      const preview = document.createElement('div');
-      preview.className = 'file-box-preview';
-      const previewAudio = document.createElement('audio');
-      previewAudio.controls = true;
-      previewAudio.src = itemUrl;
-      preview.appendChild(previewAudio);
-
-      const actions = document.createElement('div');
-      actions.className = 'file-actions';
-      const downloadLink = document.createElement('a');
-      downloadLink.className = 'btn file-action download-ready';
-      downloadLink.href = itemUrl;
-      downloadLink.download = fileName;
-      downloadLink.textContent = 'Download';
-      downloadLink.addEventListener('click', () => {
-        setDownloadButtonState(downloadLink, true);
-      });
-      actions.appendChild(downloadLink);
-
-      content.appendChild(copy);
-      content.appendChild(preview);
-      content.appendChild(actions);
-      item.appendChild(content);
-      historyList.prepend(item);
-      historyPanel.hidden = false;
-    }
-
     function getQualityValue(modeKey) {
       return qualityState[modeKey] || QUALITY_DEFAULTS[modeKey];
     }
@@ -812,8 +784,6 @@
       switch (item.status) {
         case 'working':
           return 'Converting';
-        case 'done':
-          return 'Done';
         case 'error':
           return 'Error';
         default:
@@ -825,19 +795,15 @@
       const summary = {
         queued: queueItems.filter((item) => item.status === 'queued').length,
         working: queueItems.filter((item) => item.status === 'working').length,
-        done: queueItems.filter((item) => item.status === 'done').length,
         error: queueItems.filter((item) => item.status === 'error').length
       };
-      const parts = [];
+      const parts = [queueItems.length + ' selected'];
 
       if (summary.queued) {
         parts.push(summary.queued + ' waiting');
       }
       if (summary.working) {
         parts.push(summary.working + ' converting');
-      }
-      if (summary.done) {
-        parts.push(summary.done + ' done');
       }
       if (summary.error) {
         parts.push(summary.error + ' failed');
@@ -874,18 +840,50 @@
         detail.style.marginTop = '8px';
         detail.textContent = item.detail;
 
-        const statusWrap = document.createElement('div');
-        statusWrap.className = 'queue-status';
-
-        const badge = document.createElement('span');
-        badge.className = 'badge ' + item.status;
-        badge.textContent = queueStatusLabel(item);
-
         copy.appendChild(name);
         copy.appendChild(detail);
-        statusWrap.appendChild(badge);
         content.appendChild(copy);
-        content.appendChild(statusWrap);
+
+        if (item.status === 'done' && item.outputUrl) {
+          const resultWrap = document.createElement('div');
+          resultWrap.className = 'queue-item-result';
+
+          const preview = document.createElement('div');
+          preview.className = 'file-box-preview';
+          const previewAudio = document.createElement('audio');
+          previewAudio.controls = true;
+          previewAudio.src = item.outputUrl;
+          preview.appendChild(previewAudio);
+
+          const actions = document.createElement('div');
+          actions.className = 'file-actions';
+          const downloadLink = document.createElement('a');
+          downloadLink.className = 'btn file-action';
+          downloadLink.href = item.outputUrl;
+          downloadLink.download = item.outputName || buildOutputName(item.file.name);
+          downloadLink.textContent = 'Download';
+          setDownloadButtonState(downloadLink, !!item.didDownload);
+          downloadLink.addEventListener('click', () => {
+            item.didDownload = true;
+            setDownloadButtonState(downloadLink, true);
+          });
+          actions.appendChild(downloadLink);
+
+          resultWrap.appendChild(preview);
+          resultWrap.appendChild(actions);
+          content.appendChild(resultWrap);
+        } else {
+          const statusWrap = document.createElement('div');
+          statusWrap.className = 'queue-status';
+
+          const badge = document.createElement('span');
+          badge.className = 'badge ' + item.status;
+          badge.textContent = queueStatusLabel(item);
+
+          statusWrap.appendChild(badge);
+          content.appendChild(statusWrap);
+        }
+
         row.appendChild(content);
         queueList.appendChild(row);
       }
@@ -946,7 +944,10 @@
           id: queueItemId,
           file: file,
           status: 'queued',
-          detail: 'Ready to convert at ' + getQualityLabel(currentModeKey) + '.'
+          detail: 'Ready to convert at ' + getQualityLabel(currentModeKey) + '.',
+          outputName: '',
+          outputUrl: '',
+          didDownload: false
         });
         added += 1;
       }
@@ -955,13 +956,13 @@
       updateQueueUi();
 
       if (!added) {
-        setStatus('bad', skipped ? 'No compatible files were added to the queue.' : 'Waiting for file.');
+        setStatus('bad', skipped ? 'No compatible files were selected.' : 'Waiting for file.');
         return;
       }
 
       const pendingCount = getPendingItems().length;
       const summary =
-        added + ' file' + (added === 1 ? '' : 's') + ' added to the queue.' +
+        added + ' file' + (added === 1 ? '' : 's') + ' selected.' +
         (skipped ? ' Skipped ' + skipped + ' incompatible file' + (skipped === 1 ? '' : 's') + '.' : '') +
         ' ' + pendingCount + ' waiting.';
       setStatus('warn', summary.trim());
@@ -1176,9 +1177,13 @@
       }
 
       const outName = buildOutputName(item.file.name);
+      const outputUrl = URL.createObjectURL(blob);
+      archivedUrls.push(outputUrl);
       item.status = 'done';
       item.detail = outName + ' | ' + prettyBytes(blob.size);
-      addConvertedItem(outName, blob);
+      item.outputName = outName;
+      item.outputUrl = outputUrl;
+      item.didDownload = false;
     }
 
     async function runConversions(convertAll) {
@@ -1231,8 +1236,8 @@
         setStatus(
           failed ? 'warn' : 'ok',
           failed
-            ? 'That file failed to convert.' + (remaining ? ' ' + remaining + ' files remain in the queue.' : '')
-            : 'Conversion finished.' + (remaining ? ' ' + remaining + ' files remain in the queue.' : ''),
+            ? 'That file failed to convert.' + (remaining ? ' ' + remaining + ' files still waiting.' : '')
+            : 'Conversion finished.' + (remaining ? ' ' + remaining + ' files still waiting.' : ''),
           failed ? undefined : 100
         );
         return;
