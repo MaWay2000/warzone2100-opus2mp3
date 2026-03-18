@@ -332,12 +332,154 @@
       flex: 1 1 300px;
       min-width: 220px;
     }
-    .queue-item-result .file-box-preview audio {
-      width: 100%;
-      max-width: 420px;
-    }
     .queue-item-result .file-action {
       min-width: 160px;
+    }
+    .audio-shell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: min(100%, 420px);
+      padding: 10px 14px;
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 50% -20%, rgba(120, 180, 255, 0.18), transparent 45%),
+        linear-gradient(180deg, #24303d 0%, #111924 48%, #091019 100%);
+      border: 1px solid rgba(120, 180, 255, 0.3);
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -2px 8px rgba(0, 0, 0, 0.65),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 12px 26px rgba(0, 0, 0, 0.45),
+        0 2px 0 rgba(255, 255, 255, 0.04);
+    }
+    .audio-shell.compact {
+      width: min(100%, 260px);
+      padding: 8px 10px;
+      gap: 8px;
+      border-radius: 16px;
+    }
+    .audio-source {
+      display: none;
+    }
+    .audio-btn,
+    .audio-vol-btn {
+      width: 36px;
+      height: 32px;
+      padding: 0;
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(78, 88, 103, 0.98) 0%, rgba(43, 50, 60, 0.98) 45%, rgba(23, 28, 35, 0.98) 100%);
+      border: 1px solid rgba(125, 180, 255, 0.22);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex: 0 0 auto;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.45),
+        0 3px 10px rgba(0, 0, 0, 0.25);
+    }
+    .audio-btn:hover,
+    .audio-vol-btn:hover {
+      border-color: rgba(145, 210, 255, 0.38);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.45),
+        0 0 12px rgba(0, 180, 255, 0.12),
+        0 3px 10px rgba(0, 0, 0, 0.25);
+    }
+    .audio-shell.compact .audio-btn,
+    .audio-shell.compact .audio-vol-btn {
+      width: 32px;
+      height: 28px;
+    }
+    .audio-btn svg,
+    .audio-vol-btn svg {
+      width: 13px;
+      height: 13px;
+      fill: #fff;
+    }
+    .audio-shell.compact .audio-btn svg,
+    .audio-shell.compact .audio-vol-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+    .audio-progress {
+      flex: 1 1 auto;
+      min-width: 80px;
+      accent-color: #ffffff;
+    }
+    .audio-progress,
+    .audio-volume {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(13, 17, 24, 0.96) 0%, rgba(6, 10, 14, 0.98) 100%);
+      outline: none;
+      cursor: pointer;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        inset 0 -2px 5px rgba(0, 0, 0, 0.45);
+    }
+    .audio-progress::-webkit-slider-thumb,
+    .audio-volume::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: #fff;
+      border: 2px solid rgba(197, 227, 255, 0.8);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+    }
+    .audio-progress::-moz-range-thumb,
+    .audio-volume::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: #fff;
+      border: 2px solid rgba(197, 227, 255, 0.8);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+    }
+    .audio-progress::-moz-range-track,
+    .audio-volume::-moz-range-track {
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(13, 17, 24, 0.96) 0%, rgba(6, 10, 14, 0.98) 100%);
+    }
+    .audio-shell.compact .audio-progress::-webkit-slider-thumb,
+    .audio-shell.compact .audio-volume::-webkit-slider-thumb,
+    .audio-shell.compact .audio-progress::-moz-range-thumb,
+    .audio-shell.compact .audio-volume::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+    }
+    .audio-time {
+      flex: 0 0 auto;
+      min-width: 74px;
+      color: #f0f7ff;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .audio-shell.compact .audio-time {
+      min-width: 62px;
+      font-size: 11px;
+    }
+    .audio-volume-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    .audio-volume {
+      width: 74px;
+    }
+    .audio-shell.compact .audio-volume {
+      width: 56px;
     }
     .badge {
       display: inline-flex;
@@ -376,8 +518,6 @@
       height: 10px;
       margin-top: 0;
     }
-    audio { width: 100%; margin-top: 12px; }
-    .file-box-preview audio { margin-top: 0; }
     .small { font-size: 14px; color: #b9bfd6; }
     @media (max-width: 640px) {
       .settings-grid,
@@ -462,7 +602,6 @@
           </div>
           <div class="status-queue-controls">
             <div id="previewWrap" class="file-box-preview" hidden>
-              <audio id="audioPreview" controls></audio>
             </div>
             <div class="file-actions">
               <button id="convertBtn" class="btn secondary file-action" disabled>Convert Next</button>
@@ -589,8 +728,6 @@
     const statusBox = document.getElementById('status');
     const statusText = document.getElementById('statusText');
     const progressBar = document.getElementById('progress');
-    const audioPreview = document.getElementById('audioPreview');
-
     const { FFmpeg } = FFmpegWASM;
 
     let ffmpeg = null;
@@ -672,21 +809,157 @@
       button.classList.toggle('download-done', didDownload);
     }
 
+    function formatTime(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) {
+        return '0:00';
+      }
+
+      const wholeSeconds = Math.floor(seconds);
+      const minutes = Math.floor(wholeSeconds / 60);
+      const remainder = wholeSeconds % 60;
+      return minutes + ':' + String(remainder).padStart(2, '0');
+    }
+
+    function playSvg() {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,5 19,12 8,19"></polygon></svg>';
+    }
+
+    function pauseSvg() {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="5" width="4" height="14"></rect><rect x="13" y="5" width="4" height="14"></rect></svg>';
+    }
+
+    function volumeSvg(muted) {
+      if (muted) {
+        return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5.23v13.54L8.91 14H5V10h3.91L14 5.23z"></path><path d="M17 9l4 4m0-4-4 4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"></path></svg>';
+      }
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5.23v13.54L8.91 14H5V10h3.91L14 5.23z"></path><path d="M17 9a4 4 0 0 1 0 6m2.5-8.5a7 7 0 0 1 0 11" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"></path></svg>';
+    }
+
+    function createAudioPlayer(sourceUrl, compact, initialVolume) {
+      const shell = document.createElement('div');
+      shell.className = 'audio-shell' + (compact ? ' compact' : '');
+
+      const audio = document.createElement('audio');
+      audio.className = 'audio-source';
+      audio.preload = 'metadata';
+      audio.src = sourceUrl;
+      audio.volume = typeof initialVolume === 'number' ? initialVolume : 1;
+
+      const playButton = document.createElement('button');
+      playButton.type = 'button';
+      playButton.className = 'audio-btn';
+      playButton.setAttribute('aria-label', 'Play or pause preview');
+
+      const progress = document.createElement('input');
+      progress.type = 'range';
+      progress.className = 'audio-progress';
+      progress.min = '0';
+      progress.max = '1000';
+      progress.step = '1';
+      progress.value = '0';
+
+      const time = document.createElement('div');
+      time.className = 'audio-time';
+      time.textContent = '0:00 / 0:00';
+
+      const volumeWrap = document.createElement('div');
+      volumeWrap.className = 'audio-volume-wrap';
+
+      const volumeButton = document.createElement('button');
+      volumeButton.type = 'button';
+      volumeButton.className = 'audio-vol-btn';
+      volumeButton.setAttribute('aria-label', 'Mute or unmute preview');
+
+      const volume = document.createElement('input');
+      volume.type = 'range';
+      volume.className = 'audio-volume';
+      volume.min = '0';
+      volume.max = '1';
+      volume.step = '0.01';
+      volume.value = String(audio.volume);
+
+      let storedVolume = audio.volume || 1;
+
+      function syncPlayerUi() {
+        const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+        const currentTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+        progress.value = duration > 0 ? String(Math.round((currentTime / duration) * 1000)) : '0';
+        time.textContent = formatTime(currentTime) + ' / ' + formatTime(duration);
+        playButton.innerHTML = audio.paused ? playSvg() : pauseSvg();
+        const effectiveVolume = audio.muted ? 0 : audio.volume;
+        volume.value = String(effectiveVolume);
+        volumeButton.innerHTML = volumeSvg(audio.muted || effectiveVolume === 0);
+      }
+
+      playButton.addEventListener('click', async () => {
+        try {
+          if (audio.paused) {
+            await audio.play();
+          } else {
+            audio.pause();
+          }
+        } catch (error) {}
+      });
+
+      progress.addEventListener('input', () => {
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          audio.currentTime = (Number(progress.value) / 1000) * audio.duration;
+        }
+        syncPlayerUi();
+      });
+
+      volume.addEventListener('input', () => {
+        const nextVolume = Math.max(0, Math.min(1, Number(volume.value)));
+        audio.volume = nextVolume;
+        audio.muted = nextVolume === 0;
+        if (nextVolume > 0) {
+          storedVolume = nextVolume;
+        }
+        syncPlayerUi();
+      });
+
+      volumeButton.addEventListener('click', () => {
+        if (audio.muted || audio.volume === 0) {
+          audio.muted = false;
+          audio.volume = storedVolume > 0 ? storedVolume : 1;
+        } else {
+          storedVolume = audio.volume > 0 ? audio.volume : storedVolume;
+          audio.muted = true;
+        }
+        syncPlayerUi();
+      });
+
+      ['loadedmetadata', 'timeupdate', 'play', 'pause', 'ended', 'volumechange'].forEach((eventName) => {
+        audio.addEventListener(eventName, syncPlayerUi);
+      });
+
+      volumeWrap.appendChild(volumeButton);
+      volumeWrap.appendChild(volume);
+      shell.appendChild(audio);
+      shell.appendChild(playButton);
+      shell.appendChild(progress);
+      shell.appendChild(time);
+      shell.appendChild(volumeWrap);
+
+      syncPlayerUi();
+      return shell;
+    }
+
     function setPreviewFile(file) {
       if (currentPreviewUrl) {
         URL.revokeObjectURL(currentPreviewUrl);
         currentPreviewUrl = '';
       }
 
+      previewWrap.textContent = '';
+
       if (!file) {
         previewWrap.hidden = true;
-        audioPreview.removeAttribute('src');
-        audioPreview.load();
         return;
       }
 
       currentPreviewUrl = URL.createObjectURL(file);
-      audioPreview.src = currentPreviewUrl;
+      previewWrap.appendChild(createAudioPlayer(currentPreviewUrl, true, 1));
       previewWrap.hidden = false;
     }
 
@@ -855,10 +1128,7 @@
 
           const preview = document.createElement('div');
           preview.className = 'file-box-preview';
-          const previewAudio = document.createElement('audio');
-          previewAudio.controls = true;
-          previewAudio.src = item.outputUrl;
-          preview.appendChild(previewAudio);
+          preview.appendChild(createAudioPlayer(item.outputUrl, false, 1));
 
           const actions = document.createElement('div');
           actions.className = 'file-actions';
