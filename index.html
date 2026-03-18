@@ -22,6 +22,7 @@
     }
     .layout {
       width: min(1120px, 100%);
+      padding-top: var(--status-space, 124px);
     }
     .card {
       width: 100%;
@@ -163,9 +164,14 @@
       background: #0d1019;
     }
     .status-panel {
-      position: sticky;
-      top: 24px;
-      z-index: 20;
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1120px, calc(100vw - 48px));
+      z-index: 2000;
+      margin-top: 0;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
       background: rgba(13, 16, 25, 0.96);
       backdrop-filter: blur(10px);
     }
@@ -524,6 +530,11 @@
       throw new Error('Unsupported input type for FFmpeg file loading.');
     }
 
+    function updateStatusSpacer() {
+      const bannerHeight = statusBox.offsetHeight || 0;
+      document.documentElement.style.setProperty('--status-space', (bannerHeight + 24) + 'px');
+    }
+
     function setStatus(type, text, progress) {
       statusBox.className = 'panel ' + type;
       statusText.textContent = text;
@@ -534,6 +545,7 @@
       } else {
         progressBar.hidden = true;
       }
+      window.requestAnimationFrame(updateStatusSpacer);
     }
 
     function setConvertButtonReady(isReady) {
@@ -1176,6 +1188,7 @@
     updateModeUi();
     clearQueue('Waiting for file.');
 
+    window.addEventListener('resize', updateStatusSpacer);
     window.addEventListener('beforeunload', () => {
       if (currentPreviewUrl) {
         URL.revokeObjectURL(currentPreviewUrl);
