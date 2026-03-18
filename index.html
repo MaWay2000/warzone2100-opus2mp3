@@ -96,10 +96,20 @@
     }
     .file-box-copy {
       min-width: 0;
-      flex: 1 1 auto;
+      flex: 0 1 220px;
+    }
+    .file-box-preview {
+      min-width: 0;
+      flex: 1 1 280px;
+    }
+    .file-actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     .file-action {
-      flex: 0 0 auto;
+      min-width: 190px;
     }
     .mono { font-family: Consolas, monospace; word-break: break-word; }
     .ok { border-color: #2f8f5b; }
@@ -107,9 +117,20 @@
     .bad { border-color: #a1425e; }
     progress { width: 100%; height: 16px; margin-top: 10px; }
     audio { width: 100%; margin-top: 12px; }
+    .file-box-preview audio { margin-top: 0; }
     .small { font-size: 14px; color: #b9bfd6; }
     @media (max-width: 640px) {
       .file-box-content {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .file-box-copy,
+      .file-box-preview,
+      .file-actions {
+        width: 100%;
+        flex: 1 1 auto;
+      }
+      .file-actions {
         flex-direction: column;
         align-items: stretch;
       }
@@ -152,7 +173,13 @@
           <strong>Selected file</strong>
           <div id="fileMeta" class="small mono" style="margin-top:8px;"></div>
         </div>
-        <button id="convertBtn" class="btn secondary file-action" disabled>Convert to MP3</button>
+        <div id="previewWrap" class="file-box-preview" hidden>
+          <audio id="audioPreview" controls></audio>
+        </div>
+        <div class="file-actions">
+          <button id="convertBtn" class="btn secondary file-action" disabled>Convert to MP3</button>
+          <a id="downloadBtn" class="btn file-action" href="#" download="converted.mp3" hidden>Download MP3</a>
+        </div>
       </div>
     </div>
 
@@ -165,10 +192,6 @@
     <div id="result" class="panel ok" hidden>
       <strong>Finished</strong>
       <div id="resultText" class="small" style="margin-top:8px;"></div>
-      <div class="row">
-        <a id="downloadBtn" class="btn" href="#" download="converted.mp3">Download MP3</a>
-      </div>
-      <audio id="audioPreview" controls></audio>
     </div>
   </div>
 
@@ -217,14 +240,15 @@
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
     const convertBtn = document.getElementById('convertBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
     const fileBox = document.getElementById('fileBox');
     const fileMeta = document.getElementById('fileMeta');
+    const previewWrap = document.getElementById('previewWrap');
     const statusBox = document.getElementById('status');
     const statusText = document.getElementById('statusText');
     const progressBar = document.getElementById('progress');
     const resultBox = document.getElementById('result');
     const resultText = document.getElementById('resultText');
-    const downloadBtn = document.getElementById('downloadBtn');
     const audioPreview = document.getElementById('audioPreview');
 
     const { FFmpeg } = FFmpegWASM;
@@ -261,6 +285,9 @@
 
     function resetResult() {
       resultBox.hidden = true;
+      previewWrap.hidden = true;
+      downloadBtn.hidden = true;
+      convertBtn.hidden = false;
       audioPreview.removeAttribute('src');
       audioPreview.load();
       if (activeUrl) {
@@ -325,6 +352,8 @@
       selectedFile = file;
       fileBox.hidden = false;
       fileMeta.textContent = file.name + ' (' + prettyBytes(file.size) + ')';
+      convertBtn.hidden = false;
+      downloadBtn.hidden = true;
       convertBtn.disabled = false;
       setStatus('warn', 'File ready. Click convert.');
     }
@@ -541,6 +570,9 @@
         downloadBtn.href = activeUrl;
         downloadBtn.download = outName;
         audioPreview.src = activeUrl;
+        previewWrap.hidden = false;
+        convertBtn.hidden = true;
+        downloadBtn.hidden = false;
         resultText.textContent = outName + ' is ready. Size: ' + prettyBytes(blob.size);
         resultBox.hidden = false;
 
