@@ -112,6 +112,18 @@
     .file-action {
       min-width: 190px;
     }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .history-item {
+      border: 1px solid #2c3040;
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: #0d1019;
+    }
     .mono { font-family: Consolas, monospace; word-break: break-word; }
     .ok { border-color: #2f8f5b; }
     .warn { border-color: #8d6c2e; }
@@ -194,6 +206,11 @@
       <strong>Finished</strong>
       <div id="resultText" class="small" style="margin-top:8px;"></div>
     </div>
+
+    <div id="historyPanel" class="panel" hidden>
+      <strong>Converted files</strong>
+      <div id="historyList" class="history-list"></div>
+    </div>
   </div>
 
   <script src="./ffmpeg.js"></script>
@@ -250,6 +267,8 @@
     const progressBar = document.getElementById('progress');
     const resultBox = document.getElementById('result');
     const resultText = document.getElementById('resultText');
+    const historyPanel = document.getElementById('historyPanel');
+    const historyList = document.getElementById('historyList');
     const audioPreview = document.getElementById('audioPreview');
 
     const { FFmpeg } = FFmpegWASM;
@@ -258,7 +277,7 @@
     let ffmpeg = null;
     let loaded = false;
     let selectedFile = null;
-    let activeUrl = null;
+    const archivedUrls = [];
     let currentModeKey = 'opusToMp3';
 
     function prettyBytes(bytes) {
@@ -285,6 +304,57 @@
       }
     }
 
+    function resetSelectionForNextFile() {
+      selectedFile = null;
+      fileInput.value = '';
+      fileBox.hidden = true;
+      resetResult();
+      convertBtn.disabled = true;
+      statusBox.hidden = true;
+      resultBox.hidden = true;
+    }
+
+    function addConvertedItem(fileName, blob) {
+      const itemUrl = URL.createObjectURL(blob);
+      archivedUrls.push(itemUrl);
+
+      const item = document.createElement('div');
+      item.className = 'history-item';
+
+      const content = document.createElement('div');
+      content.className = 'file-box-content';
+
+      const copy = document.createElement('div');
+      copy.className = 'file-box-copy';
+      copy.innerHTML =
+        '<strong>Converted file</strong>' +
+        '<div class="small mono" style="margin-top:8px;">' +
+        fileName + ' (' + prettyBytes(blob.size) + ')</div>';
+
+      const preview = document.createElement('div');
+      preview.className = 'file-box-preview';
+      const previewAudio = document.createElement('audio');
+      previewAudio.controls = true;
+      previewAudio.src = itemUrl;
+      preview.appendChild(previewAudio);
+
+      const actions = document.createElement('div');
+      actions.className = 'file-actions';
+      const downloadLink = document.createElement('a');
+      downloadLink.className = 'btn file-action';
+      downloadLink.href = itemUrl;
+      downloadLink.download = fileName;
+      downloadLink.textContent = currentMode().downloadLabel;
+      actions.appendChild(downloadLink);
+
+      content.appendChild(copy);
+      content.appendChild(preview);
+      content.appendChild(actions);
+      item.appendChild(content);
+      historyList.prepend(item);
+      historyPanel.hidden = false;
+    }
+
     function resetResult() {
       resultBox.hidden = true;
       previewWrap.hidden = true;
@@ -292,10 +362,6 @@
       convertBtn.hidden = false;
       audioPreview.removeAttribute('src');
       audioPreview.load();
-      if (activeUrl) {
-        URL.revokeObjectURL(activeUrl);
-        activeUrl = null;
-      }
     }
 
     function updateModeButtons() {
@@ -565,22 +631,13 @@
           try { await ffmpeg.deleteFile(outputName); } catch (e) {}
         }
 
-        if (activeUrl) URL.revokeObjectURL(activeUrl);
-        activeUrl = URL.createObjectURL(blob);
-
-        const outName = buildOutputName(selectedFile.name);
-        downloadBtn.href = activeUrl;
-        downloadBtn.download = outName;
-        audioPreview.src = activeUrl;
-        previewWrap.hidden = false;
-        convertBtn.hidden = true;
-        downloadBtn.hidden = false;
+      const outName = buildOutputName(selectedFile.name);
+        addConvertedItem(outName, blob);
       resultText.textContent = outName + ' is ready. Size: ' + prettyBytes(blob.size);
       resultBox.hidden = false;
 
       setStatus('ok', 'Conversion finished.', 100);
-      statusBox.hidden = true;
-      resultBox.hidden = true;
+      resetSelectionForNextFile();
       } catch (err) {
         console.error(err);
         setStatus('bad', 'Error: ' + (err && err.message ? err.message : err));
@@ -610,6 +667,12 @@
 
     updateModeUi();
     clearSelection('Waiting for file.');
+
+    window.addEventListener('beforeunload', () => {
+      for (const url of archivedUrls) {
+        URL.revokeObjectURL(url);
+      }
+    });
   </script>
 </body>
 </html>
