@@ -28,8 +28,9 @@
       padding: 28px;
       box-shadow: 0 20px 60px rgba(0,0,0,.45);
     }
-    h1 { margin: 0 0 12px; font-size: 42px; }
+    h1 { margin: 0 0 12px; font-size: 42px; text-align: center; }
     p { color: #c8cbe0; }
+    .intro-copy { text-align: center; }
     .mode-switch {
       display: flex;
       flex-wrap: wrap;
@@ -203,7 +204,7 @@
 <body>
   <div class="card">
     <h1 id="pageTitle">OPUS to MP3 Converter</h1>
-    <p id="introText">GitHub Pages version. Runs in your browser using ffmpeg.wasm single-thread core.</p>
+    <p id="introText" class="intro-copy">GitHub Pages version. Runs in your browser using ffmpeg.wasm single-thread core.</p>
 
     <div class="mode-switch" role="group" aria-label="Conversion direction">
       <button id="modeOpusToMp3" class="btn secondary mode-btn active" type="button" aria-pressed="true">
