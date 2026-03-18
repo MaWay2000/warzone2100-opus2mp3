@@ -69,6 +69,12 @@
       font-weight: 700;
       cursor: pointer;
       text-decoration: none;
+      transition:
+        background-color 220ms ease,
+        border-color 220ms ease,
+        color 220ms ease,
+        box-shadow 220ms ease,
+        opacity 180ms ease;
     }
     .btn.secondary {
       background: #1b1f30;
@@ -81,6 +87,13 @@
       color: #102312;
       border-color: #8bd61e;
       box-shadow: 0 0 0 1px rgba(139, 214, 30, 0.24) inset;
+    }
+    .convert-ready,
+    .convert-ready.btn.secondary {
+      background: #78c200;
+      color: #102312;
+      border-color: #8bd61e;
+      box-shadow: 0 0 18px rgba(120, 194, 0, 0.18);
     }
     .btn[disabled] { opacity: .55; cursor: not-allowed; }
     input[type=file] { display: none; }
@@ -306,12 +319,17 @@
       }
     }
 
+    function setConvertButtonReady(isReady) {
+      convertBtn.classList.toggle('convert-ready', isReady);
+    }
+
     function resetSelectionForNextFile() {
       selectedFile = null;
       fileInput.value = '';
       fileBox.hidden = true;
       resetResult();
       convertBtn.disabled = true;
+      setConvertButtonReady(false);
       statusBox.hidden = true;
       resultBox.hidden = true;
     }
@@ -362,6 +380,7 @@
       previewWrap.hidden = true;
       downloadBtn.hidden = true;
       convertBtn.hidden = false;
+      setConvertButtonReady(false);
       audioPreview.removeAttribute('src');
       audioPreview.load();
     }
@@ -394,6 +413,7 @@
       fileBox.hidden = true;
       resetResult();
       convertBtn.disabled = true;
+      setConvertButtonReady(false);
       setStatus(statusType || 'warn', waitingText || 'Waiting for file.');
     }
 
@@ -425,6 +445,7 @@
       convertBtn.hidden = false;
       downloadBtn.hidden = true;
       convertBtn.disabled = false;
+      setConvertButtonReady(true);
       setStatus('warn', 'File ready. Click convert.');
     }
 
@@ -605,6 +626,7 @@
     async function convertSelectedFile() {
       if (!selectedFile) return;
       convertBtn.disabled = true;
+      setConvertButtonReady(false);
       resultBox.hidden = true;
 
       try {
@@ -645,6 +667,7 @@
         setStatus('bad', 'Error: ' + (err && err.message ? err.message : err));
       } finally {
         convertBtn.disabled = !selectedFile;
+        setConvertButtonReady(!!selectedFile && !convertBtn.disabled);
       }
     }
 
