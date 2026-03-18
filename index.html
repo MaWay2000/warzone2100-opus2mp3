@@ -545,7 +545,7 @@
     }
 
     function setStatus(type, text, progress) {
-      statusBox.className = 'panel ' + type;
+      statusBox.className = 'panel status-panel ' + type;
       statusText.textContent = text;
       statusBox.hidden = false;
       if (typeof progress === 'number') {
