@@ -177,6 +177,13 @@
       background: rgba(13, 16, 25, 0.96);
       backdrop-filter: blur(10px);
     }
+    .status-panel,
+    .status-panel.ok,
+    .status-panel.warn,
+    .status-panel.bad {
+      border-width: 2px;
+      border-color: #78c200;
+    }
     .status-row {
       display: flex;
       align-items: center;
@@ -185,7 +192,7 @@
     .status-queue-strip {
       margin-top: 8px;
       padding-top: 8px;
-      border-top: 1px solid #2c3040;
+      border-top: 2px solid #78c200;
     }
     .status-panel .file-box-content {
       justify-content: flex-start;
