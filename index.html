@@ -276,6 +276,7 @@
     function setStatus(type, text, progress) {
       statusBox.className = 'panel ' + type;
       statusText.textContent = text;
+      statusBox.hidden = false;
       if (typeof progress === 'number') {
         progressBar.hidden = false;
         progressBar.value = Math.max(0, Math.min(100, progress));
@@ -574,10 +575,12 @@
         previewWrap.hidden = false;
         convertBtn.hidden = true;
         downloadBtn.hidden = false;
-        resultText.textContent = outName + ' is ready. Size: ' + prettyBytes(blob.size);
-        resultBox.hidden = false;
+      resultText.textContent = outName + ' is ready. Size: ' + prettyBytes(blob.size);
+      resultBox.hidden = false;
 
-        setStatus('ok', 'Conversion finished.', 100);
+      setStatus('ok', 'Conversion finished.', 100);
+      statusBox.hidden = true;
+      resultBox.hidden = true;
       } catch (err) {
         console.error(err);
         setStatus('bad', 'Error: ' + (err && err.message ? err.message : err));
