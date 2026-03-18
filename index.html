@@ -792,7 +792,8 @@
       statusBox.className = 'panel status-panel ' + type;
       statusText.textContent = text;
       statusBox.hidden = false;
-      if (typeof progress === 'number') {
+      const hasActiveJobs = isConverting || activeQueueItemId !== null || !!activeProgressLabel;
+      if (typeof progress === 'number' && hasActiveJobs) {
         progressBar.hidden = false;
         progressBar.value = Math.max(0, Math.min(100, progress));
       } else {
