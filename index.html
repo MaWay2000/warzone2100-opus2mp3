@@ -320,19 +320,24 @@
     .queue-item-result {
       display: flex;
       align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
       gap: 12px;
-      flex: 0 0 auto;
+      flex: 1 1 460px;
+      min-width: 0;
       margin-left: auto;
+      max-width: 100%;
     }
     .queue-item-result .file-box-preview {
-      flex: 0 0 420px;
+      flex: 1 1 300px;
+      min-width: 220px;
     }
     .queue-item-result .file-box-preview audio {
       width: 100%;
       max-width: 420px;
     }
     .queue-item-result .file-action {
-      min-width: 180px;
+      min-width: 160px;
     }
     .badge {
       display: inline-flex;
