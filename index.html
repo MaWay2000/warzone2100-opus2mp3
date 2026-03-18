@@ -20,8 +20,11 @@
       justify-content: center;
       padding: 24px;
     }
-    .card {
+    .layout {
       width: min(1120px, 100%);
+    }
+    .card {
+      width: 100%;
       background: #12131a;
       border: 1px solid #2a2d3a;
       border-radius: 18px;
@@ -161,7 +164,7 @@
     }
     .status-panel {
       position: sticky;
-      top: 12px;
+      top: 24px;
       z-index: 20;
       background: rgba(13, 16, 25, 0.96);
       backdrop-filter: blur(10px);
@@ -319,70 +322,72 @@
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1 id="pageTitle">OPUS to MP3 Converter</h1>
-    <p id="introText" class="intro-copy">GitHub Pages version. Runs in your browser using ffmpeg.wasm single-thread core.</p>
-
-    <div class="mode-switch" role="group" aria-label="Conversion direction">
-      <button id="modeOpusToMp3" class="btn secondary mode-btn active" type="button" aria-pressed="true">
-        OPUS to MP3
-      </button>
-      <button id="modeMp3ToOpus" class="btn secondary mode-btn" type="button" aria-pressed="false">
-        MP3 to OPUS
-      </button>
-    </div>
-
+  <div class="layout">
     <div id="status" class="panel warn status-panel">
       <strong>Status</strong>
       <div id="statusText" class="small" style="margin-top:8px;">Waiting for file.</div>
       <progress id="progress" value="0" max="100" hidden></progress>
     </div>
 
-    <div class="panel">
-      <div class="settings-grid">
-        <label class="setting-field">
-          <span id="qualityLabel" class="small setting-label">Output Quality MP3 bitrate</span>
-          <select id="qualitySelect" class="setting-select"></select>
-        </label>
-      </div>
-    </div>
+    <div class="card">
+      <h1 id="pageTitle">OPUS to MP3 Converter</h1>
+      <p id="introText" class="intro-copy">GitHub Pages version. Runs in your browser using ffmpeg.wasm single-thread core.</p>
 
-    <div id="dropzone" class="dropzone">
-      <strong id="dropTitle">Drop your .opus files here</strong>
-      <div id="dropHelper" class="small" style="margin-top:6px;">You can also use compatible .ogg and .webm audio files.</div>
-      <div class="row">
-        <label class="btn" for="fileInput">Choose Files</label>
+      <div class="mode-switch" role="group" aria-label="Conversion direction">
+        <button id="modeOpusToMp3" class="btn secondary mode-btn active" type="button" aria-pressed="true">
+          OPUS to MP3
+        </button>
+        <button id="modeMp3ToOpus" class="btn secondary mode-btn" type="button" aria-pressed="false">
+          MP3 to OPUS
+        </button>
       </div>
-      <input id="fileInput" type="file" accept=".opus,audio/opus,.ogg,.webm,audio/ogg,audio/webm" multiple />
-    </div>
 
-    <div id="fileBox" class="panel" hidden>
-      <div class="file-box-content">
-        <div class="file-box-copy">
-          <strong id="fileBoxTitle">Next in queue</strong>
-          <div id="fileMeta" class="small mono" style="margin-top:8px;"></div>
-        </div>
-        <div id="previewWrap" class="file-box-preview" hidden>
-          <audio id="audioPreview" controls></audio>
-        </div>
-        <div class="file-actions">
-          <button id="convertBtn" class="btn secondary file-action" disabled>Convert Next</button>
-          <button id="convertAllBtn" class="btn secondary file-action" disabled hidden>Convert All</button>
+      <div class="panel">
+        <div class="settings-grid">
+          <label class="setting-field">
+            <span id="qualityLabel" class="small setting-label">Output Quality MP3 bitrate</span>
+            <select id="qualitySelect" class="setting-select"></select>
+          </label>
         </div>
       </div>
-    </div>
 
-    <div id="queuePanel" class="panel" hidden>
-      <div class="panel-title-row">
-        <strong>Queue</strong>
-        <span id="queueSummary" class="panel-summary"></span>
+      <div id="dropzone" class="dropzone">
+        <strong id="dropTitle">Drop your .opus files here</strong>
+        <div id="dropHelper" class="small" style="margin-top:6px;">You can also use compatible .ogg and .webm audio files.</div>
+        <div class="row">
+          <label class="btn" for="fileInput">Choose Files</label>
+        </div>
+        <input id="fileInput" type="file" accept=".opus,audio/opus,.ogg,.webm,audio/ogg,audio/webm" multiple />
       </div>
-      <div id="queueList" class="queue-list"></div>
-    </div>
 
-    <div id="historyPanel" class="panel" hidden>
-      <strong>Converted files</strong>
-      <div id="historyList" class="history-list"></div>
+      <div id="fileBox" class="panel" hidden>
+        <div class="file-box-content">
+          <div class="file-box-copy">
+            <strong id="fileBoxTitle">Next in queue</strong>
+            <div id="fileMeta" class="small mono" style="margin-top:8px;"></div>
+          </div>
+          <div id="previewWrap" class="file-box-preview" hidden>
+            <audio id="audioPreview" controls></audio>
+          </div>
+          <div class="file-actions">
+            <button id="convertBtn" class="btn secondary file-action" disabled>Convert Next</button>
+            <button id="convertAllBtn" class="btn secondary file-action" disabled hidden>Convert All</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="queuePanel" class="panel" hidden>
+        <div class="panel-title-row">
+          <strong>Queue</strong>
+          <span id="queueSummary" class="panel-summary"></span>
+        </div>
+        <div id="queueList" class="queue-list"></div>
+      </div>
+
+      <div id="historyPanel" class="panel" hidden>
+        <strong>Converted files</strong>
+        <div id="historyList" class="history-list"></div>
+      </div>
     </div>
   </div>
 
