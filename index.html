@@ -170,7 +170,7 @@
       width: min(1120px, calc(100vw - 48px));
       z-index: 2000;
       margin-top: 0;
-      padding: 10px 14px;
+      padding: 8px 12px;
       border-bottom-left-radius: 0;
       border-bottom-right-radius: 0;
       box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
@@ -183,12 +183,41 @@
       gap: 12px;
     }
     .status-queue-strip {
-      margin-top: 10px;
-      padding-top: 10px;
+      margin-top: 8px;
+      padding-top: 8px;
       border-top: 1px solid #2c3040;
     }
     .status-panel .file-box-content {
-      gap: 14px;
+      gap: 10px;
+    }
+    .status-panel .file-box-copy {
+      flex: 0 1 180px;
+    }
+    .status-panel .file-box-preview {
+      flex: 0 1 320px;
+    }
+    .status-panel .file-actions {
+      gap: 10px;
+    }
+    .status-panel .file-action {
+      min-width: 154px;
+      padding: 12px 18px;
+      font-size: 15px;
+    }
+    .status-panel #fileBoxTitle {
+      font-size: 13px;
+    }
+    .status-panel #fileMeta {
+      margin-top: 4px !important;
+      font-size: 13px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-panel .file-box-preview audio {
+      width: 100%;
+      max-width: 320px;
     }
     .status-panel strong {
       font-size: 14px;
