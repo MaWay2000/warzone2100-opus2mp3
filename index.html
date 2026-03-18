@@ -41,6 +41,26 @@
       flex: 1 1 220px;
       min-width: 0;
     }
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .setting-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .setting-select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #31364b;
+      background: #1b1f30;
+      color: #fff;
+      font: inherit;
+    }
     .dropzone {
       margin-top: 18px;
       border: 2px dashed #5968ff66;
@@ -169,6 +189,73 @@
       padding: 14px 16px;
       background: #0d1019;
     }
+    .panel-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .panel-summary {
+      font-size: 14px;
+      color: #b9bfd6;
+    }
+    .queue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .queue-item {
+      border: 1px solid #2c3040;
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: #0d1019;
+    }
+    .queue-item-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .queue-copy {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .queue-status {
+      flex: 0 0 auto;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 94px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .badge.queued {
+      background: #2b2416;
+      color: #ffdd93;
+      border-color: #8d6c2e;
+    }
+    .badge.working {
+      background: #16243a;
+      color: #9dc3ff;
+      border-color: #355c94;
+    }
+    .badge.done {
+      background: #13281c;
+      color: #8de0b1;
+      border-color: #2f8f5b;
+    }
+    .badge.error {
+      background: #321721;
+      color: #ffb8c9;
+      border-color: #a1425e;
+    }
     .mono { font-family: Consolas, monospace; word-break: break-word; }
     .ok { border-color: #2f8f5b; }
     .warn { border-color: #8d6c2e; }
@@ -198,6 +285,16 @@
       .file-action.btn {
         width: 100%;
       }
+      .queue-item-content {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .queue-status {
+        width: 100%;
+      }
+      .badge {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -215,41 +312,54 @@
       </button>
     </div>
 
+    <div class="panel">
+      <strong>Quality</strong>
+      <div class="settings-grid">
+        <label class="setting-field">
+          <span id="qualityLabel" class="small">MP3 bitrate</span>
+          <select id="qualitySelect" class="setting-select"></select>
+        </label>
+      </div>
+    </div>
+
     <div id="dropzone" class="dropzone">
-      <strong id="dropTitle">Drop your .opus file here</strong>
+      <strong id="dropTitle">Drop your .opus files here</strong>
       <div class="small" style="margin-top:8px;">or choose a file below</div>
       <div id="dropHelper" class="small" style="margin-top:6px;">You can also use compatible .ogg and .webm audio files.</div>
       <div class="row">
-        <label class="btn" for="fileInput">Choose File</label>
+        <label class="btn" for="fileInput">Choose Files</label>
       </div>
-      <input id="fileInput" type="file" accept=".opus,audio/opus,.ogg,.webm,audio/ogg,audio/webm" />
+      <input id="fileInput" type="file" accept=".opus,audio/opus,.ogg,.webm,audio/ogg,audio/webm" multiple />
     </div>
 
     <div id="fileBox" class="panel" hidden>
       <div class="file-box-content">
         <div class="file-box-copy">
-          <strong>Selected file</strong>
+          <strong id="fileBoxTitle">Next in queue</strong>
           <div id="fileMeta" class="small mono" style="margin-top:8px;"></div>
         </div>
         <div id="previewWrap" class="file-box-preview" hidden>
           <audio id="audioPreview" controls></audio>
         </div>
         <div class="file-actions">
-          <button id="convertBtn" class="btn secondary file-action" disabled>Convert to MP3</button>
-          <a id="downloadBtn" class="btn file-action" href="#" download="converted.mp3" hidden>Download</a>
+          <button id="convertBtn" class="btn secondary file-action" disabled>Convert Next</button>
+          <button id="convertAllBtn" class="btn secondary file-action" disabled hidden>Convert All</button>
         </div>
       </div>
+    </div>
+
+    <div id="queuePanel" class="panel" hidden>
+      <div class="panel-title-row">
+        <strong>Queue</strong>
+        <span id="queueSummary" class="panel-summary"></span>
+      </div>
+      <div id="queueList" class="queue-list"></div>
     </div>
 
     <div id="status" class="panel warn">
       <strong>Status</strong>
       <div id="statusText" class="small" style="margin-top:8px;">Waiting for file.</div>
       <progress id="progress" value="0" max="100" hidden></progress>
-    </div>
-
-    <div id="result" class="panel ok" hidden>
-      <strong>Finished</strong>
-      <div id="resultText" class="small" style="margin-top:8px;"></div>
     </div>
 
     <div id="historyPanel" class="panel" hidden>
@@ -260,29 +370,47 @@
 
   <script src="./ffmpeg.js"></script>
   <script>
+    const LOCAL_CORE_URL = new URL('./ffmpeg-core.js', window.location.href).href;
+    const LOCAL_WASM_URL = new URL('./ffmpeg-core.wasm', window.location.href).href;
+    const QUALITY_OPTIONS = {
+      opusToMp3: [
+        { value: '128k', label: '128 kbps' },
+        { value: '192k', label: '192 kbps' },
+        { value: '256k', label: '256 kbps' },
+        { value: '320k', label: '320 kbps' }
+      ],
+      mp3ToOpus: [
+        { value: '96000', label: '96 kbps' },
+        { value: '128000', label: '128 kbps' },
+        { value: '160000', label: '160 kbps' },
+        { value: '192000', label: '192 kbps' }
+      ]
+    };
+    const QUALITY_DEFAULTS = {
+      opusToMp3: '192k',
+      mp3ToOpus: '128000'
+    };
     const MODES = {
       opusToMp3: {
         title: 'OPUS to MP3 Converter',
-        intro: 'GitHub Pages version. Convert OPUS-like audio to MP3 in your browser using ffmpeg.wasm single-thread core.',
-        dropTitle: 'Drop your .opus file here',
-        dropHelper: 'You can also use compatible .ogg and .webm audio files.',
-        convertLabel: 'Convert to MP3',
-        downloadLabel: 'Download MP3',
+        intro: 'GitHub Pages version. Convert OPUS-like audio to MP3 in your browser using a local ffmpeg.wasm single-thread core.',
+        dropTitle: 'Drop your .opus files here',
+        dropHelper: 'Choose one or many compatible .opus, .ogg, or .webm audio files.',
+        qualityLabel: 'MP3 bitrate',
         accept: '.opus,audio/opus,.ogg,.webm,audio/ogg,audio/webm',
         extensions: ['opus', 'ogg', 'webm'],
         outputExtension: 'mp3',
         outputMime: 'audio/mpeg',
         progressLabel: 'Converting to MP3...',
         fileError: 'This mode accepts .opus, .ogg, or .webm audio files.',
-        buildArgs: (inputName, outputName) => ['-i', inputName, '-b:a', '192k', outputName]
+        buildArgs: (inputName, outputName, quality) => ['-i', inputName, '-b:a', quality, outputName]
       },
       mp3ToOpus: {
         title: 'MP3 to OPUS Converter',
         intro: 'GitHub Pages version. Convert MP3 audio to Ogg Opus in your browser using native browser audio tools.',
-        dropTitle: 'Drop your .mp3 file here',
-        dropHelper: 'Choose an MP3 audio file to convert it into .opus.',
-        convertLabel: 'Convert to OPUS',
-        downloadLabel: 'Download OPUS',
+        dropTitle: 'Drop your .mp3 files here',
+        dropHelper: 'Choose one or more MP3 audio files to convert them into .opus.',
+        qualityLabel: 'OPUS bitrate',
         accept: '.mp3,audio/mpeg',
         extensions: ['mp3'],
         outputExtension: 'opus',
@@ -301,16 +429,20 @@
     const modeMp3ToOpus = document.getElementById('modeMp3ToOpus');
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
+    const fileBoxTitle = document.getElementById('fileBoxTitle');
     const convertBtn = document.getElementById('convertBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const convertAllBtn = document.getElementById('convertAllBtn');
     const fileBox = document.getElementById('fileBox');
     const fileMeta = document.getElementById('fileMeta');
     const previewWrap = document.getElementById('previewWrap');
+    const qualityLabel = document.getElementById('qualityLabel');
+    const qualitySelect = document.getElementById('qualitySelect');
+    const queuePanel = document.getElementById('queuePanel');
+    const queueList = document.getElementById('queueList');
+    const queueSummary = document.getElementById('queueSummary');
     const statusBox = document.getElementById('status');
     const statusText = document.getElementById('statusText');
     const progressBar = document.getElementById('progress');
-    const resultBox = document.getElementById('result');
-    const resultText = document.getElementById('resultText');
     const historyPanel = document.getElementById('historyPanel');
     const historyList = document.getElementById('historyList');
     const audioPreview = document.getElementById('audioPreview');
@@ -319,9 +451,14 @@
 
     let ffmpeg = null;
     let loaded = false;
-    let selectedFile = null;
+    let queueItems = [];
+    let queueItemId = 0;
+    let isConverting = false;
+    let activeQueueItemId = null;
+    let activeProgressLabel = '';
+    let currentPreviewUrl = '';
     const archivedUrls = [];
-    const blobUrlCache = new Map();
+    const qualityState = { ...QUALITY_DEFAULTS };
     let currentModeKey = 'opusToMp3';
 
     function prettyBytes(bytes) {
@@ -342,22 +479,6 @@
         throw new Error('Failed to fetch ' + url + ' (' + response.status + ')');
       }
       return await response.arrayBuffer();
-    }
-
-    async function toBlobURL(url, mimeType) {
-      const cacheKey = mimeType + '|' + url;
-      if (blobUrlCache.has(cacheKey)) {
-        return blobUrlCache.get(cacheKey);
-      }
-
-      const buffer = await fetchArrayBuffer(url);
-      const objectUrl = URL.createObjectURL(
-        new Blob([buffer], { type: mimeType || 'application/octet-stream' })
-      );
-
-      blobUrlCache.set(cacheKey, objectUrl);
-      archivedUrls.push(objectUrl);
-      return objectUrl;
     }
 
     async function fetchFile(input) {
@@ -401,15 +522,22 @@
       button.classList.toggle('download-done', didDownload);
     }
 
-    function resetSelectionForNextFile() {
-      selectedFile = null;
-      fileInput.value = '';
-      fileBox.hidden = true;
-      resetResult();
-      convertBtn.disabled = true;
-      setConvertButtonReady(false);
-      statusBox.hidden = true;
-      resultBox.hidden = true;
+    function setPreviewFile(file) {
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+        currentPreviewUrl = '';
+      }
+
+      if (!file) {
+        previewWrap.hidden = true;
+        audioPreview.removeAttribute('src');
+        audioPreview.load();
+        return;
+      }
+
+      currentPreviewUrl = URL.createObjectURL(file);
+      audioPreview.src = currentPreviewUrl;
+      previewWrap.hidden = false;
     }
 
     function addConvertedItem(fileName, blob) {
@@ -424,9 +552,10 @@
 
       const copy = document.createElement('div');
       copy.className = 'file-box-copy';
-      copy.innerHTML =
-        '<div class="small mono">' +
-        fileName + ' (' + prettyBytes(blob.size) + ')</div>';
+      const copyText = document.createElement('div');
+      copyText.className = 'small mono';
+      copyText.textContent = fileName + ' (' + prettyBytes(blob.size) + ')';
+      copy.appendChild(copyText);
 
       const preview = document.createElement('div');
       preview.className = 'file-box-preview';
@@ -455,15 +584,25 @@
       historyPanel.hidden = false;
     }
 
-    function resetResult() {
-      resultBox.hidden = true;
-      previewWrap.hidden = true;
-      downloadBtn.hidden = true;
-      setDownloadButtonState(downloadBtn, false);
-      convertBtn.hidden = false;
-      setConvertButtonReady(false);
-      audioPreview.removeAttribute('src');
-      audioPreview.load();
+    function getQualityValue(modeKey) {
+      return qualityState[modeKey] || QUALITY_DEFAULTS[modeKey];
+    }
+
+    function getQualityLabel(modeKey) {
+      const option = QUALITY_OPTIONS[modeKey].find((item) => item.value === getQualityValue(modeKey));
+      return option ? option.label : '';
+    }
+
+    function getPendingItems() {
+      return queueItems.filter((item) => item.status === 'queued');
+    }
+
+    function getActiveItem() {
+      return queueItems.find((item) => item.id === activeQueueItemId) || null;
+    }
+
+    function getNextPendingItem() {
+      return getPendingItems()[0] || null;
     }
 
     function updateModeButtons() {
@@ -472,6 +611,23 @@
       modeMp3ToOpus.classList.toggle('active', !isOpusToMp3);
       modeOpusToMp3.setAttribute('aria-pressed', String(isOpusToMp3));
       modeMp3ToOpus.setAttribute('aria-pressed', String(!isOpusToMp3));
+      modeOpusToMp3.disabled = isConverting;
+      modeMp3ToOpus.disabled = isConverting;
+      qualitySelect.disabled = isConverting;
+    }
+
+    function populateQualityOptions() {
+      qualityLabel.textContent = currentMode().qualityLabel;
+      qualitySelect.textContent = '';
+
+      for (const option of QUALITY_OPTIONS[currentModeKey]) {
+        const element = document.createElement('option');
+        element.value = option.value;
+        element.textContent = option.label;
+        qualitySelect.appendChild(element);
+      }
+
+      qualitySelect.value = getQualityValue(currentModeKey);
     }
 
     function updateModeUi() {
@@ -481,21 +637,28 @@
       introText.textContent = mode.intro;
       dropTitle.textContent = mode.dropTitle;
       dropHelper.textContent = mode.dropHelper;
-      convertBtn.textContent = mode.convertLabel;
-      downloadBtn.textContent = 'Download';
-      downloadBtn.download = 'converted.' + mode.outputExtension;
-      setDownloadButtonState(downloadBtn, false);
       fileInput.accept = mode.accept;
+      convertBtn.textContent = 'Convert Next';
+      convertAllBtn.textContent = 'Convert All';
+      populateQualityOptions();
       updateModeButtons();
     }
 
-    function clearSelection(waitingText, statusType) {
-      selectedFile = null;
+    function clearQueue(waitingText, statusType) {
+      queueItems = [];
+      queueItemId = 0;
+      activeQueueItemId = null;
+      activeProgressLabel = '';
       fileInput.value = '';
       fileBox.hidden = true;
-      resetResult();
+      queuePanel.hidden = true;
+      queueSummary.textContent = '';
+      queueList.textContent = '';
       convertBtn.disabled = true;
+      convertAllBtn.disabled = true;
+      convertAllBtn.hidden = true;
       setConvertButtonReady(false);
+      setPreviewFile(null);
       setStatus(statusType || 'warn', waitingText || 'Waiting for file.');
     }
 
@@ -508,35 +671,169 @@
       return currentMode().extensions.includes(fileExtension(file.name));
     }
 
-    function setFile(file) {
-      resetResult();
-
-      if (!file) {
-        clearSelection();
-        return;
-      }
-
-      if (!fileMatchesMode(file)) {
-        clearSelection(currentMode().fileError, 'bad');
-        return;
-      }
-
-      selectedFile = file;
-      fileBox.hidden = false;
-      fileMeta.textContent = file.name + ' (' + prettyBytes(file.size) + ')';
-      convertBtn.hidden = false;
-      downloadBtn.hidden = true;
-      convertBtn.disabled = false;
-      setConvertButtonReady(true);
-      setStatus('warn', 'File ready. Click convert.');
-    }
-
     function buildOutputName(fileName) {
       const outputExtension = currentMode().outputExtension;
       if (!/\.[^.]+$/.test(fileName || '')) {
         return 'converted.' + outputExtension;
       }
       return fileName.replace(/\.[^.]+$/, '') + '.' + outputExtension;
+    }
+
+    function queueStatusLabel(item) {
+      switch (item.status) {
+        case 'working':
+          return 'Converting';
+        case 'done':
+          return 'Done';
+        case 'error':
+          return 'Error';
+        default:
+          return 'Waiting';
+      }
+    }
+
+    function buildQueueSummary() {
+      const summary = {
+        queued: queueItems.filter((item) => item.status === 'queued').length,
+        working: queueItems.filter((item) => item.status === 'working').length,
+        done: queueItems.filter((item) => item.status === 'done').length,
+        error: queueItems.filter((item) => item.status === 'error').length
+      };
+      const parts = [];
+
+      if (summary.queued) {
+        parts.push(summary.queued + ' waiting');
+      }
+      if (summary.working) {
+        parts.push(summary.working + ' converting');
+      }
+      if (summary.done) {
+        parts.push(summary.done + ' done');
+      }
+      if (summary.error) {
+        parts.push(summary.error + ' failed');
+      }
+
+      return parts.join(' | ');
+    }
+
+    function renderQueue() {
+      queueList.textContent = '';
+
+      if (!queueItems.length) {
+        queuePanel.hidden = true;
+        queueSummary.textContent = '';
+        return;
+      }
+
+      for (const item of queueItems) {
+        const row = document.createElement('div');
+        row.className = 'queue-item';
+
+        const content = document.createElement('div');
+        content.className = 'queue-item-content';
+
+        const copy = document.createElement('div');
+        copy.className = 'queue-copy';
+
+        const name = document.createElement('div');
+        name.className = 'small mono';
+        name.textContent = item.file.name + ' (' + prettyBytes(item.file.size) + ')';
+
+        const detail = document.createElement('div');
+        detail.className = 'small';
+        detail.style.marginTop = '8px';
+        detail.textContent = item.detail;
+
+        const statusWrap = document.createElement('div');
+        statusWrap.className = 'queue-status';
+
+        const badge = document.createElement('span');
+        badge.className = 'badge ' + item.status;
+        badge.textContent = queueStatusLabel(item);
+
+        copy.appendChild(name);
+        copy.appendChild(detail);
+        statusWrap.appendChild(badge);
+        content.appendChild(copy);
+        content.appendChild(statusWrap);
+        row.appendChild(content);
+        queueList.appendChild(row);
+      }
+
+      queueSummary.textContent = buildQueueSummary();
+      queuePanel.hidden = false;
+    }
+
+    function updateQueueUi() {
+      const activeItem = getActiveItem();
+      const nextItem = activeItem || getNextPendingItem();
+      const pendingCount = getPendingItems().length;
+
+      updateModeButtons();
+      renderQueue();
+
+      if (!nextItem) {
+        fileBox.hidden = true;
+        setPreviewFile(null);
+        return;
+      }
+
+      fileBox.hidden = false;
+      fileBoxTitle.textContent = activeItem ? 'Converting now' : (pendingCount > 1 ? 'Next in queue' : 'Ready to convert');
+      fileMeta.textContent =
+        nextItem.file.name +
+        ' (' + prettyBytes(nextItem.file.size) + ')' +
+        (activeItem
+          ? (pendingCount ? ' | ' + pendingCount + ' waiting' : '')
+          : (pendingCount > 1 ? ' | ' + pendingCount + ' files pending' : ''));
+
+      convertBtn.disabled = isConverting || !pendingCount;
+      convertAllBtn.hidden = pendingCount < 2;
+      convertAllBtn.disabled = isConverting || pendingCount < 2;
+      setConvertButtonReady(!isConverting && pendingCount > 0);
+      setPreviewFile(nextItem.file);
+    }
+
+    function enqueueFiles(fileList) {
+      const files = Array.from(fileList || []);
+      let added = 0;
+      let skipped = 0;
+
+      if (!files.length) {
+        return;
+      }
+
+      for (const file of files) {
+        if (!fileMatchesMode(file)) {
+          skipped += 1;
+          continue;
+        }
+
+        queueItemId += 1;
+        queueItems.push({
+          id: queueItemId,
+          file: file,
+          status: 'queued',
+          detail: 'Ready to convert at ' + getQualityLabel(currentModeKey) + '.'
+        });
+        added += 1;
+      }
+
+      fileInput.value = '';
+      updateQueueUi();
+
+      if (!added) {
+        setStatus('bad', skipped ? 'No compatible files were added to the queue.' : 'Waiting for file.');
+        return;
+      }
+
+      const pendingCount = getPendingItems().length;
+      const summary =
+        added + ' file' + (added === 1 ? '' : 's') + ' added to the queue.' +
+        (skipped ? ' Skipped ' + skipped + ' incompatible file' + (skipped === 1 ? '' : 's') + '.' : '') +
+        ' ' + pendingCount + ' waiting.';
+      setStatus('warn', summary.trim());
     }
 
     function getAudioContextConstructor() {
@@ -562,7 +859,7 @@
 
       const audioContext = new AudioContextCtor();
       try {
-        setStatus('warn', 'Decoding MP3...', 15);
+        setStatus('warn', 'Decoding ' + file.name + '...', 15);
         const arrayBuffer = await file.arrayBuffer();
         return await audioContext.decodeAudioData(arrayBuffer.slice(0));
       } finally {
@@ -572,7 +869,7 @@
       }
     }
 
-    async function encodeAudioBufferToOpus(audioBuffer) {
+    async function encodeAudioBufferToOpus(audioBuffer, audioBitsPerSecond) {
       ensureOpusRecorderSupport();
 
       const AudioContextCtor = getAudioContextConstructor();
@@ -610,7 +907,7 @@
         try {
           recorder = new MediaRecorder(destination.stream, {
             mimeType: 'audio/ogg;codecs=opus',
-            audioBitsPerSecond: 128000
+            audioBitsPerSecond: audioBitsPerSecond
           });
         } catch (error) {
           cleanup();
@@ -652,7 +949,7 @@
             const elapsedSeconds = (performance.now() - startedAt) / 1000;
             const totalSeconds = Math.max(audioBuffer.duration, 0.1);
             const progress = 20 + Math.round(Math.min(75, (elapsedSeconds / totalSeconds) * 75));
-            setStatus('warn', currentMode().progressLabel, progress);
+            setStatus('warn', activeProgressLabel || currentMode().progressLabel, progress);
           }, 200);
 
           recorder.start(250);
@@ -665,24 +962,28 @@
     }
 
     function setMode(nextModeKey) {
+      if (isConverting) {
+        return;
+      }
+
       if (!MODES[nextModeKey] || nextModeKey === currentModeKey) {
         return;
       }
 
       currentModeKey = nextModeKey;
       updateModeUi();
-      clearSelection('Waiting for file.');
+      clearQueue('Waiting for file.');
     }
 
     async function ensureLoaded() {
       if (loaded) return;
 
       try {
-        setStatus('warn', 'Loading FFmpeg core... first load can take 10-30 seconds.', 5);
+        setStatus('warn', 'Loading local FFmpeg core... first load can take 10-30 seconds.', 5);
 
         ffmpeg = new FFmpeg();
         ffmpeg.on('progress', ({ progress }) => {
-          setStatus('warn', currentMode().progressLabel, Math.round(progress * 100));
+          setStatus('warn', activeProgressLabel || currentMode().progressLabel, Math.round(progress * 100));
         });
         ffmpeg.on('log', ({ message }) => {
           if (message && /error|failed/i.test(message)) {
@@ -690,14 +991,13 @@
           }
         });
 
-        const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
         await ffmpeg.load({
-          coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
-          wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm')
+          coreURL: LOCAL_CORE_URL,
+          wasmURL: LOCAL_WASM_URL
         });
 
         loaded = true;
-        setStatus('ok', 'FFmpeg loaded. Ready.');
+        setStatus('ok', 'Local FFmpeg core loaded. Ready.');
       } catch (err) {
         console.error(err);
         setStatus('bad', 'Load failed: ' + (err && err.message ? err.message : err));
@@ -705,58 +1005,136 @@
       }
     }
 
-    async function convertSelectedFile() {
-      if (!selectedFile) return;
-      convertBtn.disabled = true;
-      setConvertButtonReady(false);
-      resultBox.hidden = true;
+    async function convertQueueItem(item, batchIndex, batchTotal) {
+      const mode = currentMode();
+      const quality = getQualityValue(currentModeKey);
+      const ext = fileExtension(item.file.name) || mode.extensions[0];
+      const inputName = 'input-' + item.id + '.' + ext;
+      const outputName = 'output-' + item.id + '.' + mode.outputExtension;
+      let blob;
+
+      activeQueueItemId = item.id;
+      activeProgressLabel =
+        'Converting ' +
+        (batchIndex + 1) +
+        ' of ' +
+        batchTotal +
+        ': ' +
+        item.file.name;
+      item.status = 'working';
+      item.detail = 'Using ' + getQualityLabel(currentModeKey) + '.';
+      updateQueueUi();
+
+      if (mode.engine === 'mediaRecorder') {
+        const audioBuffer = await decodeAudioFile(item.file);
+        blob = await encodeAudioBufferToOpus(audioBuffer, Number(quality));
+      } else {
+        await ensureLoaded();
+
+        setStatus('warn', 'Preparing ' + item.file.name + '...', 10);
+        await ffmpeg.writeFile(inputName, await fetchFile(item.file));
+
+        setStatus('warn', activeProgressLabel, 15);
+        await ffmpeg.exec(mode.buildArgs(inputName, outputName, quality));
+
+        const data = await ffmpeg.readFile(outputName);
+        blob = new Blob([data.buffer], { type: mode.outputMime });
+
+        try { await ffmpeg.deleteFile(inputName); } catch (e) {}
+        try { await ffmpeg.deleteFile(outputName); } catch (e) {}
+      }
+
+      const outName = buildOutputName(item.file.name);
+      item.status = 'done';
+      item.detail = outName + ' | ' + prettyBytes(blob.size);
+      addConvertedItem(outName, blob);
+    }
+
+    async function runConversions(convertAll) {
+      const pendingItems = getPendingItems();
+
+      if (!pendingItems.length || isConverting) {
+        return;
+      }
+
+      isConverting = true;
+      updateQueueUi();
+
+      const itemsToConvert = convertAll ? pendingItems.slice() : [pendingItems[0]];
+      let completed = 0;
+      let failed = 0;
 
       try {
-        let blob;
+        for (let index = 0; index < itemsToConvert.length; index += 1) {
+          const item = itemsToConvert[index];
 
-        if (currentMode().engine === 'mediaRecorder') {
-          const audioBuffer = await decodeAudioFile(selectedFile);
-          blob = await encodeAudioBufferToOpus(audioBuffer);
-        } else {
-          await ensureLoaded();
-
-          const ext = fileExtension(selectedFile.name) || currentMode().extensions[0];
-          const inputName = 'input.' + ext;
-          const outputName = 'output.' + currentMode().outputExtension;
-
-          setStatus('warn', 'Preparing file...', 10);
-          await ffmpeg.writeFile(inputName, await fetchFile(selectedFile));
-
-          setStatus('warn', currentMode().progressLabel, 15);
-          await ffmpeg.exec(currentMode().buildArgs(inputName, outputName));
-
-          const data = await ffmpeg.readFile(outputName);
-          blob = new Blob([data.buffer], { type: currentMode().outputMime });
-
-          try { await ffmpeg.deleteFile(inputName); } catch (e) {}
-          try { await ffmpeg.deleteFile(outputName); } catch (e) {}
+          try {
+            await convertQueueItem(item, index, itemsToConvert.length);
+            completed += 1;
+          } catch (err) {
+            console.error(err);
+            item.status = 'error';
+            item.detail = err && err.message ? err.message : String(err);
+            failed += 1;
+          } finally {
+            activeQueueItemId = null;
+            activeProgressLabel = '';
+            updateQueueUi();
+          }
         }
-
-      const outName = buildOutputName(selectedFile.name);
-        addConvertedItem(outName, blob);
-      resultText.textContent = outName + ' is ready. Size: ' + prettyBytes(blob.size);
-      resultBox.hidden = false;
-
-      setStatus('ok', 'Conversion finished.', 100);
-      resetSelectionForNextFile();
-      } catch (err) {
-        console.error(err);
-        setStatus('bad', 'Error: ' + (err && err.message ? err.message : err));
       } finally {
-        convertBtn.disabled = !selectedFile;
-        setConvertButtonReady(!!selectedFile && !convertBtn.disabled);
+        isConverting = false;
+        activeQueueItemId = null;
+        activeProgressLabel = '';
+        updateQueueUi();
       }
+
+      const remaining = getPendingItems().length;
+
+      if (failed && !completed) {
+        setStatus('bad', 'No files were converted successfully.' + (remaining ? ' ' + remaining + ' files are still waiting.' : ''));
+        return;
+      }
+
+      if (itemsToConvert.length === 1) {
+        setStatus(
+          failed ? 'warn' : 'ok',
+          failed
+            ? 'That file failed to convert.' + (remaining ? ' ' + remaining + ' files remain in the queue.' : '')
+            : 'Conversion finished.' + (remaining ? ' ' + remaining + ' files remain in the queue.' : ''),
+          failed ? undefined : 100
+        );
+        return;
+      }
+
+      const parts = [];
+      if (completed) {
+        parts.push(completed + ' converted');
+      }
+      if (failed) {
+        parts.push(failed + ' failed');
+      }
+      if (remaining) {
+        parts.push(remaining + ' still waiting');
+      }
+
+      setStatus(failed ? 'warn' : 'ok', 'Batch finished: ' + parts.join(', ') + '.', failed ? undefined : 100);
     }
 
     modeOpusToMp3.addEventListener('click', () => setMode('opusToMp3'));
     modeMp3ToOpus.addEventListener('click', () => setMode('mp3ToOpus'));
-    fileInput.addEventListener('change', (e) => setFile(e.target.files[0] || null));
-    convertBtn.addEventListener('click', convertSelectedFile);
+    qualitySelect.addEventListener('change', () => {
+      qualityState[currentModeKey] = qualitySelect.value;
+
+      for (const item of getPendingItems()) {
+        item.detail = 'Ready to convert at ' + getQualityLabel(currentModeKey) + '.';
+      }
+
+      updateQueueUi();
+    });
+    fileInput.addEventListener('change', (e) => enqueueFiles(e.target.files));
+    convertBtn.addEventListener('click', () => runConversions(false));
+    convertAllBtn.addEventListener('click', () => runConversions(true));
 
     ['dragenter','dragover'].forEach(type => {
       dropzone.addEventListener(type, (e) => {
@@ -770,12 +1148,15 @@
         dropzone.classList.remove('drag');
       });
     });
-    dropzone.addEventListener('drop', (e) => setFile(e.dataTransfer.files[0] || null));
+    dropzone.addEventListener('drop', (e) => enqueueFiles(e.dataTransfer.files));
 
     updateModeUi();
-    clearSelection('Waiting for file.');
+    clearQueue('Waiting for file.');
 
     window.addEventListener('beforeunload', () => {
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+      }
       for (const url of archivedUrls) {
         URL.revokeObjectURL(url);
       }
@@ -783,3 +1164,4 @@
   </script>
 </body>
 </html>
+

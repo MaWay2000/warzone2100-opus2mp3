@@ -10,10 +10,14 @@ Why this version:
 Files:
 - index.html
 - ffmpeg.js
+- ffmpeg-core.js
+- ffmpeg-core.wasm
 - .nojekyll
 - README.md
 
 Notes:
 - `ffmpeg.js` is now a single local wrapper file with its worker code embedded
 - there is no separate `814.ffmpeg.js` chunk anymore
-- `index.html` now includes local `fetchFile` and `toBlobURL` helpers instead of loading `@ffmpeg/util`
+- `index.html` now includes local `fetchFile` helpers instead of loading `@ffmpeg/util`
+- the FFmpeg core assets are vendored locally, so GitHub Pages no longer depends on an FFmpeg CDN
+- the UI now supports batch conversion with a queue and per-mode quality controls
