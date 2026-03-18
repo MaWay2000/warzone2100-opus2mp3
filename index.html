@@ -164,14 +164,16 @@
     }
     .status-panel {
       position: fixed;
-      bottom: 12px;
+      bottom: 0;
       left: 50%;
       transform: translateX(-50%);
       width: min(1120px, calc(100vw - 48px));
       z-index: 2000;
       margin-top: 0;
       padding: 10px 14px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
       background: rgba(13, 16, 25, 0.96);
       backdrop-filter: blur(10px);
     }
