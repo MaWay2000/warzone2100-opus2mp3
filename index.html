@@ -45,7 +45,6 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-top: 12px;
     }
     .setting-field {
       display: flex;
@@ -327,10 +326,9 @@
     </div>
 
     <div class="panel">
-      <strong>Quality</strong>
       <div class="settings-grid">
         <label class="setting-field">
-          <span id="qualityLabel" class="small setting-label">MP3 bitrate</span>
+          <span id="qualityLabel" class="small setting-label">Output Quality MP3 bitrate</span>
           <select id="qualitySelect" class="setting-select"></select>
         </label>
       </div>
@@ -631,7 +629,7 @@
     }
 
     function populateQualityOptions() {
-      qualityLabel.textContent = currentMode().qualityLabel;
+      qualityLabel.textContent = 'Output Quality ' + currentMode().qualityLabel;
       qualitySelect.textContent = '';
 
       for (const option of QUALITY_OPTIONS[currentModeKey]) {
