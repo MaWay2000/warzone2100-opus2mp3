@@ -96,6 +96,20 @@
       box-shadow: 0 0 18px rgba(120, 194, 0, 0.18);
       animation: convertReadyPulse 1.8s ease-in-out infinite;
     }
+    .download-ready,
+    .download-ready.btn {
+      background: #78c200;
+      color: #102312;
+      border: 1px solid #8bd61e;
+      box-shadow: 0 0 18px rgba(120, 194, 0, 0.16);
+    }
+    .download-done,
+    .download-done.btn {
+      background: #8ea0ff;
+      color: #0f1328;
+      border: 1px solid transparent;
+      box-shadow: none;
+    }
     @keyframes convertReadyPulse {
       0%, 100% {
         background: #78c200;
@@ -338,6 +352,11 @@
       convertBtn.classList.toggle('convert-ready', isReady);
     }
 
+    function setDownloadButtonState(button, didDownload) {
+      button.classList.toggle('download-ready', !didDownload);
+      button.classList.toggle('download-done', didDownload);
+    }
+
     function resetSelectionForNextFile() {
       selectedFile = null;
       fileInput.value = '';
@@ -376,10 +395,13 @@
       const actions = document.createElement('div');
       actions.className = 'file-actions';
       const downloadLink = document.createElement('a');
-      downloadLink.className = 'btn file-action';
+      downloadLink.className = 'btn file-action download-ready';
       downloadLink.href = itemUrl;
       downloadLink.download = fileName;
       downloadLink.textContent = 'Download';
+      downloadLink.addEventListener('click', () => {
+        setDownloadButtonState(downloadLink, true);
+      });
       actions.appendChild(downloadLink);
 
       content.appendChild(copy);
@@ -394,6 +416,7 @@
       resultBox.hidden = true;
       previewWrap.hidden = true;
       downloadBtn.hidden = true;
+      setDownloadButtonState(downloadBtn, false);
       convertBtn.hidden = false;
       setConvertButtonReady(false);
       audioPreview.removeAttribute('src');
@@ -418,6 +441,7 @@
       convertBtn.textContent = mode.convertLabel;
       downloadBtn.textContent = 'Download';
       downloadBtn.download = 'converted.' + mode.outputExtension;
+      setDownloadButtonState(downloadBtn, false);
       fileInput.accept = mode.accept;
       updateModeButtons();
     }
