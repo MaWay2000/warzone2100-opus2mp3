@@ -9,5 +9,10 @@ Why this version:
 
 Files:
 - index.html
+- ffmpeg.js
 - .nojekyll
 - README.md
+
+Notes:
+- `ffmpeg.js` is now a single local wrapper file with its worker code embedded
+- there is no separate `814.ffmpeg.js` chunk anymore
