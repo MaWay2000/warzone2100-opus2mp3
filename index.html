@@ -191,7 +191,7 @@
         </div>
         <div class="file-actions">
           <button id="convertBtn" class="btn secondary file-action" disabled>Convert to MP3</button>
-          <a id="downloadBtn" class="btn file-action" href="#" download="converted.mp3" hidden>Download MP3</a>
+          <a id="downloadBtn" class="btn file-action" href="#" download="converted.mp3" hidden>Download</a>
         </div>
       </div>
     </div>
@@ -344,7 +344,7 @@
       downloadLink.className = 'btn file-action';
       downloadLink.href = itemUrl;
       downloadLink.download = fileName;
-      downloadLink.textContent = currentMode().downloadLabel;
+      downloadLink.textContent = 'Download';
       actions.appendChild(downloadLink);
 
       content.appendChild(copy);
@@ -380,7 +380,7 @@
       dropTitle.textContent = mode.dropTitle;
       dropHelper.textContent = mode.dropHelper;
       convertBtn.textContent = mode.convertLabel;
-      downloadBtn.textContent = mode.downloadLabel;
+      downloadBtn.textContent = 'Download';
       downloadBtn.download = 'converted.' + mode.outputExtension;
       fileInput.accept = mode.accept;
       updateModeButtons();
