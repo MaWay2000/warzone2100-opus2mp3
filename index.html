@@ -40,12 +40,6 @@
       flex: 1 1 220px;
       min-width: 0;
     }
-    .mode-btn.active {
-      background: #78c200;
-      color: #102312;
-      border-color: #8bd61e;
-      box-shadow: 0 0 0 1px rgba(139, 214, 30, 0.24) inset;
-    }
     .dropzone {
       margin-top: 18px;
       border: 2px dashed #5968ff66;
@@ -80,6 +74,13 @@
       background: #1b1f30;
       color: #fff;
       border: 1px solid #31364b;
+    }
+    .mode-btn.active,
+    .mode-btn.active.btn.secondary {
+      background: #78c200;
+      color: #102312;
+      border-color: #8bd61e;
+      box-shadow: 0 0 0 1px rgba(139, 214, 30, 0.24) inset;
     }
     .btn[disabled] { opacity: .55; cursor: not-allowed; }
     input[type=file] { display: none; }
